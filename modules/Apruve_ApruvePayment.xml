@@ -1,0 +1,8 @@
+<config>
+    <modules>
+        <Apruve_ApruvePayment>
+            <active>true</active>
+            <codePool>community</codePool>
+        </Apruve_ApruvePayment>
+    </modules>
+</config>
