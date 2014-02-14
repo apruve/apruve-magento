@@ -2,7 +2,7 @@
 <config>
     <modules>
        <Apruve_ApruvePayment>
-          <version>1.0.4</version>
+          <version>1.0.5</version>
        </Apruve_ApruvePayment>
     </modules>
     <frontend>
@@ -22,7 +22,7 @@
                 </apruvepayment>
             </updates>
         </layout>
-    </frontend>   
+    </frontend>
     <global>
         <blocks>
             <apruvepayment>
