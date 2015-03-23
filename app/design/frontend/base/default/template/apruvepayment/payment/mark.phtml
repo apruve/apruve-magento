@@ -29,6 +29,5 @@ $paymentRequestModel = $helper->getPaymentRequestApiModel();
 <script type="test/javascript">
     var sh = '<?php echo $paymentRequestModel->getSecureHash();?>';
     var pr = <?php echo $paymentRequestModel->getPaymentRequestJSON();?>;
-    var updatedShippingUrl = '<?php echo $helper->getAjaxAddressUpdatedUrl() ?>'
-    var oApruvePayment = new ApruvePayment(sh, pr, updatedShippingUrl);
+    var oApruvePayment = new ApruvePayment(sh, pr);
 </script>

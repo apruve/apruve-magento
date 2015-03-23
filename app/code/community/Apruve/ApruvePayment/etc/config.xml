@@ -68,6 +68,7 @@
                 <model>apruvepayment/paymentMethod</model>
                 <order_status>pending_payment</order_status>
                 <title>Pay with Apruve</title>
+                <payment_action>authorize</payment_action>
             </apruvepayment>
          </payment>
     </default>

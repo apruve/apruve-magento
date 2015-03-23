@@ -24,26 +24,12 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
     protected $_code = 'apruvepayment';
     protected $_formBlockType = 'apruvepayment/payment_form';
 
-    protected $_isGateway                   = false;
-    protected $_canOrder                    = true;
     protected $_canAuthorize                = true;
-    protected $_canCapture                  = true;
-    protected $_canCapturePartial           = false;
-    protected $_canRefund                   = false;
-    protected $_canRefundInvoicePartial     = false;
     protected $_canVoid                     = true;
-    protected $_canUseInternal              = false;
     protected $_canUseCheckout              = true;
-    protected $_canUseForMultishipping      = false;
     protected $_canFetchTransactionInfo     = true;
     protected $_canCreateBillingAgreement   = true;
     protected $_canReviewPayment            = true;
-
-    public function getCheckoutRedirectUrl()
-    {
-        return Mage::getUrl('apruvepayment/payment/review');
-    }
-
 
     /**
      * Assign data to info model instance
@@ -76,38 +62,30 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
     }
 
     /**
-     * @return string
-     */
-    public function getConfigPaymentAction()
-    {
-        return 'order';
-    }
-
-    /**
      * Get token and create transaction
      * @param Varien_Object $payment
      * @param float $amount
      * @return Mage_Payment_Model_Abstract|void
      */
-    public function order(Varien_Object $payment, $amount)
+    public function authorize(Varien_Object $payment, $amount)
     {
         $additionalInformation = $payment->getAdditionalInformation();
         $token =  $additionalInformation['aprt'];
+        $rest = Mage::getModel('apruvepayment/api_rest');
+        $order = $payment->getOrder();
 
-        //$amount = $payment->getBaseAmountOrdered() * 100; //cents
-        //$rest = Mage::getModel('apruvepayment/api_rest');
-        //$rest->postPayment($token, $amount); //return true or false
-        //$payment->setSkipOrderProcessing(true);
-        //echo 1;exit;
+        $tax = $order->getBaseTaxAmount();
+        $shipping = $order->getBaseShippingAmount();
+        if(!$rest->updatePaymentRequest($token, $amount, $shipping, $tax))
+        {
+            Mage::throwException('Couldn\'t update order totals to Apruve');
+        }
+
+        if(!$rest->postPayment($token, $amount)) {
+            Mage::throwException('Apruve couldn\'t process order information');
+        }
 
         $payment->setTransactionId($token);
-        $payment->setIsTransactionClosed(0);
-        $payment->resetTransactionAdditionalInfo();
-    }
-
-
-    public function capture(Varien_Object $payment, $amount)
-    {
-
+        return $this;
     }
 }
