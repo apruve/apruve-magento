@@ -25,11 +25,10 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
     protected $_formBlockType = 'apruvepayment/payment_form';
 
     protected $_canAuthorize                = true;
+    protected $_canCapture                  = true;
     protected $_canVoid                     = true;
     protected $_canUseCheckout              = true;
-    protected $_canFetchTransactionInfo     = true;
     protected $_canCreateBillingAgreement   = true;
-    protected $_canReviewPayment            = true;
 
     /**
      * Assign data to info model instance
@@ -85,7 +84,19 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
             Mage::throwException('Apruve couldn\'t process order information');
         }
 
-        $payment->setTransactionId($token);
+        $payment->setTransactionId($token)
+            ->setIsTransactionClosed(0);
+        return $this;
+    }
+
+    public function capture(Varien_Object $payment, $amount)
+    {
+        if ($amount <= 0) {
+            Mage::throwException(Mage::helper('paygate')->__('Invalid amount for capture.'));
+        }
+
+        $payment->setAmount($amount)
+            ->setTransactionId($payment->getParentTransactionId() . '_capture');
         return $this;
     }
 }

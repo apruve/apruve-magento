@@ -61,26 +61,17 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
         $transaction = Mage::getModel('sales/order_payment_transaction')->getCollection()
             ->addAttributeToFilter('txn_id', array('eq' => $paymentRequestId))
             ->getFirstItem();
-        if(!$transaction->getId()) {
-            return false;
+        if($transaction->getId()) {
+            $order = $transaction->getOrder();
+            if($order->getId()) {
+                $iApi = Mage::getModel('sales/order_invoice_api');
+                $invoiceId = $iApi->create($order->getIncrementId(), array());
+                $iApi->capture($invoiceId);
+                return true;
+            }
         }
 
-        $order = $transaction->getOrder();
-        if(!$order->getId()) {
-            return false;
-        }
-
-        $payment = $transaction->getOrder()->getPayment();
-        if(!$payment->getId()) {
-            exit;
-        }
-        $payment->capture(null);
-        $order->save();
-
-        $transaction->setOrderPaymentObject($payment);
-        $transaction->setIsClosed(true);
-        $transaction->save();
-        return true;
+        return false;
     }
 
 
