@@ -35,11 +35,11 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
         //required
         'merchant_id',
         'amount_cents',
-        'line_items' => array(),
         //optional
+        'currency',
         'tax_cents',
         'shipping_cents',
-        'currency', // current only USD
+        'line_items' => array(),
     );
 
     /**
@@ -50,11 +50,11 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
         //required
         'title',
         'amount_cents', // if qty -> should chanfe
+        'price_ea_cents',
         'description',
         'variant_info',
         'sku',
         'vendor',
-        'price_ea_cents',
         'view_product_url',
     );
 
@@ -118,7 +118,7 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
             'currency' => 'USD',
             'tax_cents' => $this->_convertPrice($quote->getShippingAddress()->getTaxAmount()),
             'shipping_cents' => $this->_convertPrice($quote->getShippingAddress()->getShippingAmount()),
-            'line_items' => $this->_getLineItems($quote),
+            'line_items' => $this->_getLineItems($quote)
         );
 
         return $paymentRequest;
@@ -157,11 +157,10 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
             $line_item = array(
                 'title' => $title,
                 'amount_cents' => $amount_cents,
-                'description' => $shortDescription,
-                'view_product_url' => $viewUrl,
                 'price_ea_cents' => $priceEaCents,
                 'quantity' => $qty,
-
+                'description' => isset($shortDescription) ? $shortDescription : '',
+                'view_product_url' => $viewUrl,
             );
 
             $variantInfo = $this->_getVariantInfo($item);
