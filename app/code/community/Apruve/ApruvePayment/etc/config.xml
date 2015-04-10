@@ -64,6 +64,7 @@
     <default>
         <payment>
             <apruvepayment>
+                <mode>1</mode>
                 <active>1</active>
                 <model>apruvepayment/paymentMethod</model>
                 <order_status>pending_payment</order_status>

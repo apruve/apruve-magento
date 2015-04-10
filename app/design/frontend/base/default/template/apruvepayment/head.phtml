@@ -19,9 +19,5 @@
  */
 ?>
 
-<?php if(Mage::getStoreConfig('payment/apruvepayment/testmode')):?>
-    <script type="text/javascript" src="https://test.apruve.com/js/apruve.js?display=compact"></script>
-<?php else: ?>
-    <script type="text/javascript" src="https://www.apruve.com/js/apruve.js?display=compact"></script>
-<?php endif; ?>
+<script type="text/javascript" src="<?php echo Mage::helper('apruvepayment')->getSrc();?>"></script>
 <script type="text/javascript" src="/js/Apruve/ApruvePayment.js"></script>
