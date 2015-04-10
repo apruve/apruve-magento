@@ -1,7 +1,7 @@
 var ApruvePayment = Class.create();
 
 ApruvePayment.prototype = {
-    initialize: function (hash, pr) {
+    initialize: function (hash, pr, shopperName, shopperEmail) {
         if (!apruve) {
             return false;
         }
@@ -9,6 +9,8 @@ ApruvePayment.prototype = {
         apruve.logoSrc = '';
         apruve.secureHash = hash;
         apruve.paymentRequest = pr;
+        apruve.shopperName = shopperName;
+        apruve.shopperEmail = shopperEmail;
         this._onLoad();
     },
 
@@ -41,6 +43,7 @@ ApruvePayment.prototype = {
 
     _resetApruveRadio: function () {
         if (!apruve.paymentRequestId) {
+            console.log('works')
             document.getElementById("p_method_apruvepayment").checked = false;
             document.getElementById("payment_form_apruvepayment").style.display = 'none';
             document.getElementById("aprt").value = '';

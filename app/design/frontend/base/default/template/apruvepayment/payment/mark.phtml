@@ -29,5 +29,7 @@ $paymentRequestModel = $helper->getPaymentRequestApiModel();
 <script type="test/javascript">
     var sh = '<?php echo $paymentRequestModel->getSecureHash();?>';
     var pr = <?php echo $paymentRequestModel->getPaymentRequestJSON();?>;
-    var oApruvePayment = new ApruvePayment(sh, pr);
+    var shopperName = '<?php echo $paymentRequestModel->getShopperInfo('name');?>';
+    var shopperEmail = '<?php echo $paymentRequestModel->getShopperInfo('email');?>';
+    var oApruvePayment = new ApruvePayment(sh, pr, shopperName, shopperEmail);
 </script>

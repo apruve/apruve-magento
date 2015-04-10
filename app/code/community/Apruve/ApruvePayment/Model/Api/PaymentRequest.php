@@ -40,8 +40,6 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
         'tax_cents',
         'shipping_cents',
         'currency', // current only USD
-        'shopperName',
-        'shopperEmail'
     );
 
     /**
@@ -121,8 +119,6 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
             'tax_cents' => $this->_convertPrice($quote->getShippingAddress()->getTaxAmount()),
             'shipping_cents' => $this->_convertPrice($quote->getShippingAddress()->getShippingAmount()),
             'line_items' => $this->_getLineItems($quote),
-            'shopperName' => $this->_getShopperInfo($quote, 'name'),
-            'shopperEmail' => $this->_getShopperInfo($quote, 'email')
         );
 
         return $paymentRequest;
@@ -131,8 +127,9 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
     /**
      * @param Mage_Sales_Model_Quote $quote
      */
-    function _getShopperInfo($quote, $attrName)
+    public function getShopperInfo($attrName)
     {
+        $quote = Mage::getSingleton('checkout/session')->getQuote();
         $method = 'get'.ucfirst($attrName);
         if ($quote->getCustomerIsGuest()) {
             return $quote->getBillingAddress()->$method();
