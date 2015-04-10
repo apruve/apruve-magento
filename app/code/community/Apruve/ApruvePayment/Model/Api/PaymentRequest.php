@@ -151,6 +151,7 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
             $title = $item->getName();
             $amount_cents = $this->_convertPrice($item->getPrice()) * $qty;
             $shortDescription = $item->getShortDescription();
+            $variantInfo = $this->_getVariantInfo($item);
             $viewUrl = $item->getProduct()->getProductUrl(false);
             $priceEaCents = $this->_convertPrice($item->getPrice());
 
@@ -160,13 +161,9 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
                 'price_ea_cents' => $priceEaCents,
                 'quantity' => $qty,
                 'description' => isset($shortDescription) ? $shortDescription : '',
+                'variant_info' => $variantInfo ? $variantInfo : '',
                 'view_product_url' => $viewUrl,
             );
-
-            $variantInfo = $this->_getVariantInfo($item);
-            if($variantInfo) {
-                $line_item['variant_info'] = $variantInfo;
-            }
 
             $line_items[] = $line_item;
         }
