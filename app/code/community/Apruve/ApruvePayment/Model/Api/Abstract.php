@@ -68,7 +68,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      */
     protected function _getIsTestMode()
     {
-        return Mage::getStoreConfig('payment/apruvepayment/testmode');
+        return Mage::getStoreConfig('payment/apruvepayment/mode');
     }
 
 
