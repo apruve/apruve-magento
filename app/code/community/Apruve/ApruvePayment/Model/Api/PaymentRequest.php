@@ -112,17 +112,25 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
     {
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
+        $amounts = Mage::getSingleton('checkout/session')->getApruveAmounts();
+        if (!$amounts) {
+            $amounts = Mage::helper('apruvepayment')->getAmountsFromQuote($quote);
+            Mage::getSingleton('checkout/session')->setApruveAmounts($amounts);
+        }
+
         $paymentRequest = array(
             'merchant_id' => $this->_getMerchantKey(),
-            'amount_cents' => $this->_convertPrice($quote->getGrandTotal()),
+            'amount_cents' => $this->_convertPrice($amounts['amount_cents']),
             'currency' => 'USD',
-            'tax_cents' => $this->_convertPrice($quote->getShippingAddress()->getTaxAmount()),
-            'shipping_cents' => $this->_convertPrice($quote->getShippingAddress()->getShippingAmount()),
+            'tax_cents' => $this->_convertPrice($amounts['tax_cents']),
+            'shipping_cents' => $this->_convertPrice($amounts['shipping_cents']),
             'line_items' => $this->_getLineItems($quote)
         );
 
         return $paymentRequest;
     }
+
+
 
     /**
      * @param Mage_Sales_Model_Quote $quote

@@ -18,17 +18,16 @@
  * @copyright  Copyright (coffee) 2014 Apruve, Inc. (http://www.apruve.com).
  * @license    http://opensource.org/licenses/Apache-2.0  Apache License, Version 2.0
  */
-
 class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method_Abstract
 {
     protected $_code = 'apruvepayment';
     protected $_formBlockType = 'apruvepayment/payment_form';
 
-    protected $_canAuthorize                = true;
-    protected $_canCapture                  = true;
-    protected $_canVoid                     = true;
-    protected $_canUseCheckout              = true;
-    protected $_canCreateBillingAgreement   = true;
+    protected $_canAuthorize = true;
+    protected $_canCapture = true;
+    protected $_canVoid = true;
+    protected $_canUseCheckout = true;
+    protected $_canCreateBillingAgreement = true;
 
     /**
      * Assign data to info model instance
@@ -41,8 +40,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
         //$result = parent::assignData($data);
         if (is_array($data)) {
             $this->getInfoInstance()->setAdditionalInformation('aprt', isset($data['aprt']) ? $data['aprt'] : null);
-        }
-        elseif ($data instanceof Varien_Object) {
+        } elseif ($data instanceof Varien_Object) {
             $aprt = $data->getAprt();
             $this->getInfoInstance()->setAdditionalInformation('aprt', isset($aprt) ? $aprt : null);
         }
@@ -55,7 +53,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
      */
     public function validate()
     {
-        if(!$this->getInfoInstance()->getAdditionalInformation('aprt')) {
+        if (!$this->getInfoInstance()->getAdditionalInformation('aprt')) {
             Mage::throwException('Smth going wrong, try again to post order with apruve');
         }
     }
@@ -69,21 +67,28 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
     public function authorize(Varien_Object $payment, $amount)
     {
         $additionalInformation = $payment->getAdditionalInformation();
-        $token =  $additionalInformation['aprt'];
+        $token = $additionalInformation['aprt'];
         /** @var Apruve_ApruvePayment_Model_Api_Rest $rest */
         $rest = Mage::getModel('apruvepayment/api_rest');
         /** @var Mage_Sales_Model_Order $order */
         $order = $payment->getOrder();
-
-        $tax = $order->getBaseTaxAmount();
-        $shipping = $order->getBaseShippingAmount();
-        #if(!$rest->updatePaymentRequest($token, $amount, $shipping, $tax))
-        #{
-        #    Mage::throwException('Couldn\'t update order totals to Apruve');
-        #}
+        $amounts = Mage::helper('apruvepayment')->getAmountsFromQuote($order->getQuote());
+        $oldAmounts = Mage::getSingleton('checkout/session')->getApruveAmounts();
+        if ($oldAmounts != $amounts) {
+            $updateResult = $rest->updatePaymentRequest(
+                $token,
+                $amounts['amount_cents'],
+                $amounts['tax_cents'],
+                $amounts['shipping_cents']
+            );
+            Mage::getSingleton('checkout/session')->setApruveAmounts($amounts);
+            if (!$updateResult) {
+                Mage::throwException('Couldn\'t update order totals to Apruve');
+            }
+        }
 
         $apruvePayment = $rest->postPayment($token, $amount);
-        if(!$apruvePayment) {
+        if (!$apruvePayment) {
             Mage::throwException('Apruve couldn\'t process order information');
         }
 
