@@ -43,7 +43,6 @@ ApruvePayment.prototype = {
 
     _resetApruveRadio: function () {
         if (!apruve.paymentRequestId) {
-            console.log('works')
             document.getElementById("p_method_apruvepayment").checked = false;
             document.getElementById("payment_form_apruvepayment").style.display = 'none';
             document.getElementById("aprt").value = '';
