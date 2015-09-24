@@ -70,21 +70,24 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
     {
         $additionalInformation = $payment->getAdditionalInformation();
         $token =  $additionalInformation['aprt'];
+        /** @var Apruve_ApruvePayment_Model_Api_Rest $rest */
         $rest = Mage::getModel('apruvepayment/api_rest');
+        /** @var Mage_Sales_Model_Order $order */
         $order = $payment->getOrder();
 
         $tax = $order->getBaseTaxAmount();
         $shipping = $order->getBaseShippingAmount();
-        if(!$rest->updatePaymentRequest($token, $amount, $shipping, $tax))
-        {
-            Mage::throwException('Couldn\'t update order totals to Apruve');
-        }
+        #if(!$rest->updatePaymentRequest($token, $amount, $shipping, $tax))
+        #{
+        #    Mage::throwException('Couldn\'t update order totals to Apruve');
+        #}
 
-        if(!$rest->postPayment($token, $amount)) {
+        $apruvePayment = $rest->postPayment($token, $amount);
+        if(!$apruvePayment) {
             Mage::throwException('Apruve couldn\'t process order information');
         }
 
-        $payment->setTransactionId($token)
+        $payment->setTransactionId($token . "_" . $apruvePayment->id)
             ->setIsTransactionClosed(0);
         return $this;
     }
