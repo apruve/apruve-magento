@@ -1,0 +1,5 @@
+app/etc/modules/* app/etc/modules/
+js/Apruve js/Apruve
+app/code/community/Apruve app/code/community/Apruve
+app/design/frontend/base/default/layout/* app/design/frontend/base/default/layout/
+app/design/frontend/base/default/template/apruvepayment app/design/frontend/base/default/template/apruvepayment
