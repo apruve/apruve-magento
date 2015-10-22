@@ -1,7 +1,7 @@
 var ApruvePayment = Class.create();
 
 ApruvePayment.prototype = {
-    initialize: function (hash, pr, shopperName, shopperEmail) {
+    initialize: function (hash, pr, shopperName, shopperEmail, autoSubmit) {
         if (!apruve) {
             return false;
         }
@@ -11,6 +11,7 @@ ApruvePayment.prototype = {
         apruve.paymentRequest = pr;
         apruve.shopperName = shopperName;
         apruve.shopperEmail = shopperEmail;
+        this.autoSubmit = autoSubmit;
         this._onLoad();
     },
 
@@ -34,6 +35,13 @@ ApruvePayment.prototype = {
         var self = this;
         apruve.registerApruveCallback(apruve.APRUVE_COMPLETE_EVENT, function () {
             self._resetApruveRadio();
+            if (self.autoSubmit == true) {
+                if (typeof payment !== "undefined" && typeof payment.save === "function") {
+                    payment.save();
+                } else if (typeof payment !== "undefined" && typeof payment.formId !== "undefined") {
+                    $(payment.formId).submit();
+                }
+            }
         });
 
         apruve.registerApruveCallback(apruve.APRUVE_CLOSED_EVENT, function () {

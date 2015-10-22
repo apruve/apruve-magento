@@ -35,6 +35,7 @@ $paymentRequestModel = $helper->getPaymentRequestApiModel();
     var pr = <?php echo $paymentRequestModel->getPaymentRequestJSON();?>;
     var shopperName = '<?php echo $paymentRequestModel->getShopperInfo('name');?>';
     var shopperEmail = '<?php echo $paymentRequestModel->getShopperInfo('email');?>';
-    var oApruvePayment = new ApruvePayment(sh, pr, shopperName, shopperEmail);
+    var autoSubmit = '<?php echo $helper->isAutoSubmit();?>';
+    var oApruvePayment = new ApruvePayment(sh, pr, shopperName, shopperEmail, autoSubmit);
 </script>
 

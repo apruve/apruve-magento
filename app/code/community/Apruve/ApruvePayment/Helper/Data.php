@@ -35,6 +35,11 @@ class Apruve_ApruvePayment_Helper_Data extends Mage_Core_Helper_Abstract
         return $sourceArray[Mage::getStoreConfig('payment/apruvepayment/mode')];
     }
 
+    public function isAutoSubmit()
+    {
+        return Mage::getStoreConfig('payment/apruvepayment/autosubmit');
+    }
+
     public function getSrc()
     {
         $sourceModel = Mage::getModel('apruvepayment/mode');
