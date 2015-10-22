@@ -30,12 +30,48 @@ $paymentRequestModel = $helper->getPaymentRequestApiModel();
 ?>
 
 <script type="text/javascript">
-    $$('label[for=p_method_apruvepayment]')[0].innerHTML += '<div id="apruveDiv" style="display: inline-block; position: absolute; margin-top: -3px; margin-left: 7px;"></div>';
-    var sh = '<?php echo $paymentRequestModel->getSecureHash();?>';
-    var pr = <?php echo $paymentRequestModel->getPaymentRequestJSON();?>;
-    var shopperName = '<?php echo $paymentRequestModel->getShopperInfo('name');?>';
-    var shopperEmail = '<?php echo $paymentRequestModel->getShopperInfo('email');?>';
-    var autoSubmit = '<?php echo $helper->isAutoSubmit();?>';
-    var oApruvePayment = new ApruvePayment(sh, pr, shopperName, shopperEmail, autoSubmit);
+    (function() {
+        function initApruve(url, callback) {
+            var script = document.createElement("script");
+            script.type = "text/javascript";
+            if (script.readyState) {
+                script.onreadystatechange = function () {
+                    if (script.readyState == "loaded" || script.readyState == "complete") {
+                        script.onreadystatechange = null;
+                        callback()
+                    }
+                }
+            } else {
+                script.onreadystatechange = callback;
+                script.onload = callback
+            }
+            script.src = url;
+            document.body.appendChild(script)
+        }
+
+        function initPayment() {
+            $$('label[for=p_method_apruvepayment]')[0].innerHTML += '<div id="apruveDiv" style="display: inline-block; position: absolute; margin-top: -3px; margin-left: 7px;"></div>';
+            var sh = '<?php echo $paymentRequestModel->getSecureHash();?>';
+            var pr = <?php echo $paymentRequestModel->getPaymentRequestJSON();?>;
+            var shopperName = '<?php echo $paymentRequestModel->getShopperInfo('name');?>';
+            var shopperEmail = '<?php echo $paymentRequestModel->getShopperInfo('email');?>';
+            var autoSubmit = '<?php echo $helper->isAutoSubmit();?>';
+            new ApruvePayment(sh, pr, shopperName, shopperEmail, autoSubmit);
+        }
+
+        if (typeof ApruvePayment === 'undefined') {
+            initApruve(
+                "<?php echo Mage::helper('apruvepayment')->getSrc();?>",
+                function () {
+                    if (document.readyState === "complete"
+                        && apruve.apruveIFrame === null
+                    ) apruve.initialize();
+                    initApruve("<?php echo Mage::getBaseUrl('js') . 'Apruve/ApruvePayment.js';?>", initPayment)
+                }
+            );
+        } else {
+            initPayment();
+        }
+    })();
 </script>
 

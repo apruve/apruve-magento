@@ -15,13 +15,6 @@
                 </args>
             </apruvepayment>
         </routers>
-         <layout>
-            <updates>
-                <apruvepayment>
-                    <file>apruvepayment.xml</file>
-                </apruvepayment>
-            </updates>
-        </layout>
     </frontend>
     <global>
         <blocks>
