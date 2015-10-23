@@ -21,6 +21,8 @@ ApruvePayment.prototype = {
             this._resetApruveRadio();
             this._prepareApruve();
             this._registerCallbacks();
+            $('p_method_apruvepayment').enable();
+            $('apruvepayment-please-wait').toggle();
         }
     },
 

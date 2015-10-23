@@ -20,7 +20,9 @@
 ?>
 
 <div id="payment_form_apruvepayment">
-    Press continue to review order.
+    <span class="please-wait" id="apruvepayment-please-wait">
+        <img src="<?php echo $this->getSkinUrl('images/opc-ajax-loader.gif') ?>" alt="<?php echo $this->__('Please wait...') ?>" title="<?php echo $this->__('Please wait...') ?>" class="v-middle" /> <?php echo $this->__('Please wait...') ?>
+    </span>
     <input type="hidden" id="aprt" value="" name="payment[aprt]"/>
 </div>
 
@@ -31,6 +33,7 @@ $paymentRequestModel = $helper->getPaymentRequestApiModel();
 
 <script type="text/javascript">
     (function() {
+        $('p_method_apruvepayment').disable();
         function initApruve(url, callback) {
             var script = document.createElement("script");
             script.type = "text/javascript";
