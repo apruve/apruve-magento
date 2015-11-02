@@ -64,9 +64,10 @@ class Apruve_ApruvePayment_Model_Api_Rest extends Apruve_ApruvePayment_Model_Api
      * @param float $tax
      * @return bool
      */
-    public function updatePaymentRequest($paymentRequestId, $amount, $shipping, $tax)
+    public function updatePaymentRequest($paymentRequestId, $amount, $shipping, $tax, $orderIncrementId)
     {
         $data = json_encode(array(
+            'merchant_order_id' => $orderIncrementId,
             'amount_cents' => $this->_convertPrice($amount),
             'shipping_cents' => $this->_convertPrice($shipping),
             'tax_cents' => $this->_convertPrice($tax),

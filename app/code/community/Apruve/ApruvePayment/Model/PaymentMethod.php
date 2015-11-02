@@ -72,19 +72,19 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
         $rest = Mage::getModel('apruvepayment/api_rest');
         /** @var Mage_Sales_Model_Order $order */
         $order = $payment->getOrder();
+
         $amounts = Mage::helper('apruvepayment')->getAmountsFromQuote($order->getQuote());
-        $oldAmounts = Mage::getSingleton('checkout/session')->getApruveAmounts();
-        if ($oldAmounts != $amounts) {
-            $updateResult = $rest->updatePaymentRequest(
-                $token,
-                $amounts['amount_cents'],
-                $amounts['tax_cents'],
-                $amounts['shipping_cents']
-            );
-            Mage::getSingleton('checkout/session')->setApruveAmounts($amounts);
-            if (!$updateResult) {
-                Mage::throwException('Couldn\'t update order totals to Apruve');
-            }
+
+        $updateResult = $rest->updatePaymentRequest(
+            $token,
+            $amounts['amount_cents'],
+            $amounts['tax_cents'],
+            $amounts['shipping_cents'],
+            $order->getIncrementId()
+        );
+
+        if (!$updateResult) {
+            Mage::throwException('Couldn\'t update order totals to Apruve');
         }
 
         $apruvePayment = $rest->postPayment($token, $amount);

@@ -112,11 +112,7 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
     {
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
-        $amounts = Mage::getSingleton('checkout/session')->getApruveAmounts();
-        if (!$amounts) {
-            $amounts = Mage::helper('apruvepayment')->getAmountsFromQuote($quote);
-            Mage::getSingleton('checkout/session')->setApruveAmounts($amounts);
-        }
+        $amounts = Mage::helper('apruvepayment')->getAmountsFromQuote($quote);
 
         $paymentRequest = array(
             'merchant_id' => $this->_getMerchantKey(),
