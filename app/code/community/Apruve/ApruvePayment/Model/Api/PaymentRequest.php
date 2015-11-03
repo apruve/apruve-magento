@@ -88,10 +88,10 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
         $concatString = $this->_getApiKey();
 
         foreach ($this->_paymentRequest as $val) {
-            if(!is_array($val)) {
+            if (!is_array($val)) {
                 $concatString .= $val;
             } else {
-                foreach($val as $v) {
+                foreach ($val as $v) {
                     foreach ($v as $s) {
                         $concatString .= $s;
                     }
@@ -127,14 +127,13 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
     }
 
 
-
     /**
      * @param Mage_Sales_Model_Quote $quote
      */
     public function getShopperInfo($attrName)
     {
         $quote = Mage::getSingleton('checkout/session')->getQuote();
-        $method = 'get'.ucfirst($attrName);
+        $method = 'get' . ucfirst($attrName);
         if ($quote->getCustomerIsGuest()) {
             return $quote->getBillingAddress()->$method();
         }
@@ -158,6 +157,14 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
             $variantInfo = $this->_getVariantInfo($item);
             $viewUrl = $item->getProduct()->getProductUrl(false);
             $priceEaCents = $this->_convertPrice($item->getPrice());
+
+            if (isset($shortDescription) && strlen($shortDescription) > 3500) {
+                $shortDescription = substr($shortDescription, 0, 3500);
+            }
+
+            if (isset($variantInfo) && strlen($variantInfo) > 255) {
+                $variantInfo = substr($variantInfo, 0, 255);
+            }
 
             $line_item = array(
                 'title' => $title,
@@ -186,26 +193,25 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
         $result = '';
         $variantInfo = array();
         $options = $item->getProduct()->getTypeInstance(true)->getOrderOptions($item->getProduct());
-        if(isset($options['options'])) {
+        if (isset($options['options'])) {
             $opt = $this->_getProductCustomOptions($options['options']);
-            $variantInfo =  array_merge($variantInfo, $opt);
+            $variantInfo = array_merge($variantInfo, $opt);
         }
-        if(isset($options['attributes_info'])) {
+        if (isset($options['attributes_info'])) {
             $opt = $this->_getConfigurableOptions($options['attributes_info']);
-            $variantInfo =  array_merge($variantInfo, $opt);
+            $variantInfo = array_merge($variantInfo, $opt);
         }
 
-        if(isset($options['bundle_options'])) {
+        if (isset($options['bundle_options'])) {
             $opt = $this->_getBundleOptions($options['bundle_options']);
-            $variantInfo =  array_merge($variantInfo, $opt);
+            $variantInfo = array_merge($variantInfo, $opt);
         }
 
-        if(!empty($variantInfo)) {
+        if (!empty($variantInfo)) {
             $result = $this->_getFormatedVariantInfo($variantInfo);
         }
 
         return $result;
-
     }
 
     /**
@@ -216,7 +222,7 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
     {
         $arr = array();
         foreach ($options as $option) {
-            $arr[] = $option['label'].': '.$option['value'];
+            $arr[] = $option['label'] . ': ' . $option['value'];
         }
 
         return $arr;
@@ -230,7 +236,7 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
     {
         $arr = array();
         foreach ($attributesInfo as $option) {
-            $arr[] = $option['label'].': '.$option['value'];
+            $arr[] = $option['label'] . ': ' . $option['value'];
         }
         return $arr;
     }
@@ -242,8 +248,8 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
     protected function _getBundleOptions($bundleOptions)
     {
         $arr = array();
-        foreach($bundleOptions as $option) {
-            $arr[] = $option['label'].': '.$option['value'][0]['title'];
+        foreach ($bundleOptions as $option) {
+            $arr[] = $option['label'] . ': ' . $option['value'][0]['title'];
         }
         return $arr;
     }
@@ -256,7 +262,7 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
     //todo: new line symbol
     protected function _getFormatedVariantInfo($arr)
     {
-        if(count($arr) == 1) {
+        if (count($arr) == 1) {
             $result = $arr[0];
         } else {
             $result = implode(', ', $arr);
