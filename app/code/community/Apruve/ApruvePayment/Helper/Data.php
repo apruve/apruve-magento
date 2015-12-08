@@ -25,7 +25,10 @@ class Apruve_ApruvePayment_Helper_Data extends Mage_Core_Helper_Abstract
      */
     public function getPaymentRequestApiModel()
     {
-        return Mage::getModel('apruvepayment/api_PaymentRequest');
+        return Mage::getModel(
+            'apruvepayment/api_paymentRequest',
+            Mage::getSingleton('checkout/session')->getQuote()
+        );
     }
 
     public function getMode()
@@ -45,22 +48,5 @@ class Apruve_ApruvePayment_Helper_Data extends Mage_Core_Helper_Abstract
         $sourceModel = Mage::getModel('apruvepayment/mode');
         $sourceArray = $sourceModel->toSrcArray();
         return $sourceArray[Mage::getStoreConfig('payment/apruvepayment/mode')];
-    }
-
-    /**
-     * @param Mage_Sales_Model_Quote $quote
-     */
-    public function getAmountsFromQuote($quote)
-    {
-        $result['amount_cents'] = $quote->getGrandTotal();
-        $result['tax_cents'] = 0;
-        $result['shipping_cents'] = 0;
-        foreach ($quote->getAllAddresses() as $address) {
-            /** @var Mage_Sales_Model_Quote_Address $address */
-            $result['tax_cents'] += $address->getTaxAmount();
-            $result['shipping_cents'] += $address->getShippingAmount();
-        }
-
-        return $result;
     }
 }

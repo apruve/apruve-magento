@@ -24,30 +24,30 @@
  *
  * Provide rest methods to communicate with apruve
  */
-
 class Apruve_ApruvePayment_Model_Api_Rest extends Apruve_ApruvePayment_Model_Api_Abstract
 {
     /**
      * Send Payment object
      * @param string $paymentRequestId
-     * @param float $amount
+     * @param array $payment
+     *
      * @return bool
      */
-    public function postPayment($paymentRequestId, $amount)
+    public function postPayment($paymentRequestId, $payment)
     {
-        $data = json_encode(array('amount_cents' => $this->_convertPrice($amount)));
+        $data = json_encode($payment);
 
-        $c = curl_init($this->_getPaymentUrl($paymentRequestId));
+        $c = curl_init($this->getPaymentUrl($paymentRequestId));
 
-        curl_setopt($c, CURLOPT_HTTPHEADER, $this->_getHeaders());
+        curl_setopt($c, CURLOPT_HTTPHEADER, $this->getHeaders());
         curl_setopt($c, CURLOPT_POST, true);
-        curl_setopt($c, CURLOPT_RETURNTRANSFER, true );
-        curl_setopt($c, CURLOPT_POSTFIELDS, $data );
+        curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($c, CURLOPT_POSTFIELDS, $data);
         $response = curl_exec($c);
         $http_status = curl_getinfo($c, CURLINFO_HTTP_CODE);
         curl_close($c);
 
-        if($http_status == '201') {
+        if ($http_status == '201') {
             return json_decode($response);
         } else {
             return false;
@@ -68,23 +68,23 @@ class Apruve_ApruvePayment_Model_Api_Rest extends Apruve_ApruvePayment_Model_Api
     {
         $data = json_encode(array(
             'merchant_order_id' => $orderIncrementId,
-            'amount_cents' => $this->_convertPrice($amount),
-            'shipping_cents' => $this->_convertPrice($shipping),
-            'tax_cents' => $this->_convertPrice($tax),
+            'amount_cents' => $this->convertPrice($amount),
+            'shipping_cents' => $this->convertPrice($shipping),
+            'tax_cents' => $this->convertPrice($tax),
         ));
 
-        $c = curl_init($this->_getUpdatePaymentRequestUrl($paymentRequestId));
+        $c = curl_init($this->getUpdatePaymentRequestUrl($paymentRequestId));
 
-        curl_setopt($c, CURLOPT_HTTPHEADER, $this->_getHeaders());
+        curl_setopt($c, CURLOPT_HTTPHEADER, $this->getHeaders());
         curl_setopt($c, CURLOPT_CUSTOMREQUEST, "PUT");
-        curl_setopt($c, CURLOPT_RETURNTRANSFER, true );
-        curl_setopt($c, CURLOPT_POSTFIELDS, $data );
+        curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($c, CURLOPT_POSTFIELDS, $data);
         $response = curl_exec($c);
         $http_status = curl_getinfo($c, CURLINFO_HTTP_CODE);
         curl_close($c);
 
 
-        if($http_status == '200') {
+        if ($http_status == '200') {
             return json_decode($response);
         } else {
             return false;
@@ -101,12 +101,10 @@ class Apruve_ApruvePayment_Model_Api_Rest extends Apruve_ApruvePayment_Model_Api
     public function getApruveOrderStatus($apiUrl, $status)
     {
         $c = curl_init($apiUrl);
-        curl_setopt($c, CURLOPT_HTTPHEADER, $this->_getHeaders());
+        curl_setopt($c, CURLOPT_HTTPHEADER, $this->getHeaders());
         curl_setopt($c, CURLOPT_CUSTOMREQUEST, "GET");
-        curl_setopt($c, CURLOPT_RETURNTRANSFER, true );
+        curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($c, CURLOPT_HEADER, true);
-
-
     }
 
     /**
@@ -114,9 +112,9 @@ class Apruve_ApruvePayment_Model_Api_Rest extends Apruve_ApruvePayment_Model_Api
      * @param string $paymentRequestId
      * @return string
      */
-    protected function _getPaymentUrl($paymentRequestId)
+    protected function getPaymentUrl($paymentRequestId)
     {
-        return $this->getBaseUrl(true).$this->_getApiUrl().'payment_requests/'.$paymentRequestId.'/payments';
+        return $this->getBaseUrl(true) . $this->getApiUrl() . 'payment_requests/' . $paymentRequestId . '/payments';
     }
 
 
@@ -125,8 +123,8 @@ class Apruve_ApruvePayment_Model_Api_Rest extends Apruve_ApruvePayment_Model_Api
      * @param string $paymentRequestId
      * @return string
      */
-    protected function _getUpdatePaymentRequestUrl($paymentRequestId)
+    protected function getUpdatePaymentRequestUrl($paymentRequestId)
     {
-        return $this->getBaseUrl(true).$this->_getApiUrl().'payment_requests/'.$paymentRequestId;
+        return $this->getBaseUrl(true) . $this->getApiUrl() . 'payment_requests/' . $paymentRequestId;
     }
 }

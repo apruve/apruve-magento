@@ -27,6 +27,8 @@
  */
 class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment_Model_Api_Abstract
 {
+    private $quote;
+
     /**
      * Post request general fields
      * @var array
@@ -64,9 +66,10 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
     protected $_paymentRequest;
 
 
-    public function __construct()
+    public function __construct(Mage_Sales_Model_Quote $quote)
     {
-        $this->_paymentRequest = $this->_setPaymentRequest();
+        $this->quote = $quote;
+        $this->_paymentRequest = $this->setPaymentRequest();
     }
 
     /**
@@ -85,7 +88,7 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
      */
     public function getSecureHash()
     {
-        $concatString = $this->_getApiKey();
+        $concatString = $this->getApiKey();
 
         foreach ($this->_paymentRequest as $val) {
             if (!is_array($val)) {
@@ -108,19 +111,17 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
      * Build Payment Request Array
      * @return array
      */
-    protected function _setPaymentRequest()
+    protected function setPaymentRequest()
     {
-        /** @var Mage_Sales_Model_Quote $quote */
-        $quote = Mage::getSingleton('checkout/session')->getQuote();
-        $amounts = Mage::helper('apruvepayment')->getAmountsFromQuote($quote);
+        $amounts = $this->getAmountsFromQuote($this->quote);
 
         $paymentRequest = array(
-            'merchant_id' => $this->_getMerchantKey(),
-            'amount_cents' => $this->_convertPrice($amounts['amount_cents']),
+            'merchant_id' => $this->getMerchantKey(),
+            'amount_cents' => $this->convertPrice($amounts['amount_cents']),
             'currency' => 'USD',
-            'tax_cents' => $this->_convertPrice($amounts['tax_cents']),
-            'shipping_cents' => $this->_convertPrice($amounts['shipping_cents']),
-            'line_items' => $this->_getLineItems($quote)
+            'tax_cents' => $this->convertPrice($amounts['tax_cents']),
+            'shipping_cents' => $this->convertPrice($amounts['shipping_cents']),
+            'line_items' => $this->getLineItems($this->quote)
         );
 
         return $paymentRequest;
@@ -132,140 +133,37 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
      */
     public function getShopperInfo($attrName)
     {
-        $quote = Mage::getSingleton('checkout/session')->getQuote();
         $method = 'get' . ucfirst($attrName);
-        if ($quote->getCustomerIsGuest()) {
-            return $quote->getBillingAddress()->$method();
+        if ($this->quote->getCustomerIsGuest()) {
+            return $this->quote->getBillingAddress()->$method();
         }
 
-        return $quote->getCustomer()->$method();
+        return $this->quote->getCustomer()->$method();
     }
 
     /**
      * Build Line items array
-     * @param Mage_Sales_Model_Quote $quote
+     * @param Mage_Sales_Model_Quote $itemsParent
      * @return array
      */
-    protected function _getLineItems($quote)
+    protected function getLineItems($itemsParent)
     {
-        $line_items = array();
-        foreach ($quote->getAllVisibleItems() as $item) {
-            $qty = $item->getQty();
-            $title = $item->getName();
-            $amount_cents = $this->_convertPrice($item->getPrice()) * $qty;
-            $shortDescription = $item->getShortDescription();
-            $variantInfo = $this->_getVariantInfo($item);
-            $viewUrl = $item->getProduct()->getProductUrl(false);
-            $priceEaCents = $this->_convertPrice($item->getPrice());
+        $result = array();
+        /** @var Mage_Sales_Model_Quote_Item[] $visibleItems */
+        $visibleItems = $itemsParent->getAllVisibleItems();
+        foreach ($visibleItems as $item) {
 
-            if (isset($shortDescription) && strlen($shortDescription) > 3500) {
-                $shortDescription = substr($shortDescription, 0, 3500);
-            }
-
-            if (isset($variantInfo) && strlen($variantInfo) > 255) {
-                $variantInfo = substr($variantInfo, 0, 255);
-            }
-
-            $line_item = array(
-                'title' => $title,
-                'amount_cents' => $amount_cents,
-                'price_ea_cents' => $priceEaCents,
-                'quantity' => $qty,
-                'description' => isset($shortDescription) ? $shortDescription : '',
-                'variant_info' => $variantInfo ? $variantInfo : '',
-                'view_product_url' => $viewUrl,
+            $result[] = array(
+                'title' => $item->getName(),
+                'amount_cents' => $this->convertPrice($item->getPrice()) * $item->getQty(),
+                'price_ea_cents' => $this->convertPrice($item->getPrice()),
+                'quantity' => $item->getQty(),
+                'description' => $this->getShortDescription($item),
+                'variant_info' => $this->getVariantInfo($item),
+                'sku' => $item->getSku(),
+                'view_product_url' => $item->getProduct()->getProductUrl(false),
             );
 
-            $line_items[] = $line_item;
-        }
-
-        return $line_items;
-    }
-
-
-    /**
-     * Get Product configuration if exits
-     * @param Mage_Sales_Model_Quote_Item $item
-     * @return string
-     */
-    protected function _getVariantInfo($item)
-    {
-        $result = '';
-        $variantInfo = array();
-        $options = $item->getProduct()->getTypeInstance(true)->getOrderOptions($item->getProduct());
-        if (isset($options['options'])) {
-            $opt = $this->_getProductCustomOptions($options['options']);
-            $variantInfo = array_merge($variantInfo, $opt);
-        }
-        if (isset($options['attributes_info'])) {
-            $opt = $this->_getConfigurableOptions($options['attributes_info']);
-            $variantInfo = array_merge($variantInfo, $opt);
-        }
-
-        if (isset($options['bundle_options'])) {
-            $opt = $this->_getBundleOptions($options['bundle_options']);
-            $variantInfo = array_merge($variantInfo, $opt);
-        }
-
-        if (!empty($variantInfo)) {
-            $result = $this->_getFormatedVariantInfo($variantInfo);
-        }
-
-        return $result;
-    }
-
-    /**
-     * @param array $options
-     * @return array
-     */
-    protected function _getProductCustomOptions($options)
-    {
-        $arr = array();
-        foreach ($options as $option) {
-            $arr[] = $option['label'] . ': ' . $option['value'];
-        }
-
-        return $arr;
-    }
-
-    /**
-     * @param array $attributesInfo
-     * @return array
-     */
-    protected function _getConfigurableOptions($attributesInfo)
-    {
-        $arr = array();
-        foreach ($attributesInfo as $option) {
-            $arr[] = $option['label'] . ': ' . $option['value'];
-        }
-        return $arr;
-    }
-
-    /**
-     * @param array $bundleOptions
-     * @return array
-     */
-    protected function _getBundleOptions($bundleOptions)
-    {
-        $arr = array();
-        foreach ($bundleOptions as $option) {
-            $arr[] = $option['label'] . ': ' . $option['value'][0]['title'];
-        }
-        return $arr;
-    }
-
-    /**
-     * Concatenate all options to string
-     * @param array $arr
-     * @return string
-     */
-    //todo: new line symbol
-    protected function _getFormatedVariantInfo($arr)
-    {
-        if (count($arr) == 1) {
-            $result = $arr[0];
-        } else {
-            $result = implode(', ', $arr);
         }
 
         return $result;

@@ -32,11 +32,11 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      * Generate headers for rest request
      * @return array
      */
-    protected function _getHeaders()
+    protected function getHeaders()
     {
         return array(
             'Content-type: application/json',
-            'Apruve-Api-Key: ' . $this->_getApiKey(),
+            'Apruve-Api-Key: ' . $this->getApiKey(),
         );
     }
 
@@ -44,7 +44,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      * Get Merchant key from module configuration
      * @return string|null
      */
-    protected function _getMerchantKey()
+    protected function getMerchantKey()
     {
         $id = Mage::getStoreConfig('payment/apruvepayment/merchant');
         return $id ? $id : null;
@@ -54,7 +54,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      * Get Api key from module configuration
      * @return string|null
      */
-    protected function _getApiKey()
+    protected function getApiKey()
     {
         $api = Mage::getStoreConfig('payment/apruvepayment/api');
         return $api ? $api : null;
@@ -66,7 +66,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      * Check whether payment works in test mode
      * @return bool
      */
-    protected function _getIsTestMode()
+    protected function getIsTestMode()
     {
         return Mage::getStoreConfig('payment/apruvepayment/mode');
     }
@@ -80,7 +80,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
     public function getBaseUrl($secure = false)
     {
         $http = $secure ? 'https://' : 'http://';
-        if($this->_getIsTestMode()) {
+        if($this->getIsTestMode()) {
             return $http.'test.apruve.com/';
         } else {
             return $http.'www.apruve.com/';
@@ -92,7 +92,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      * Get api url part based on version
      * @return string
      */
-    protected function _getApiUrl()
+    protected function getApiUrl()
     {
         return 'api/'.$this->_version.'/';
     }
@@ -104,9 +104,148 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      * @param float $price
      * @return float
      */
-    protected function _convertPrice($price)
+    protected function convertPrice($price)
     {
         return $price * 100;
     }
+
+    /**
+     * @return Apruve_ApruvePayment_Helper_Data
+     */
+    protected function getHelper()
+    {
+        return Mage::helper('apruvepayment');
+    }
+
+
+    /**
+     * Get Product short description
+     * @param Mage_Sales_Model_Quote_Item | Mage_Sales_Model_Order_Item $item
+     * @return string
+     */
+    protected function getShortDescription($item)
+    {
+        $shortDescription = $item->getProduct()->getShortDescription();
+
+
+        if (isset($shortDescription) && strlen($shortDescription) > 3500) {
+            $shortDescription = substr($shortDescription, 0, 3500);
+        }
+
+        return $shortDescription;
+    }
+    /**
+     * Get Product configuration if exits
+     * @param Mage_Sales_Model_Quote_Item | Mage_Sales_Model_Order_Item $item
+     * @return string
+     */
+    protected function getVariantInfo($item)
+    {
+        $result = '';
+        $variantInfo = array();
+        $options = $item->getProduct()->getTypeInstance(true)->getOrderOptions($item->getProduct());
+        if (isset($options['options'])) {
+            $opt = $this->getProductCustomOptions($options['options']);
+            $variantInfo = array_merge($variantInfo, $opt);
+        }
+        if (isset($options['attributes_info'])) {
+            $opt = $this->getConfigurableOptions($options['attributes_info']);
+            $variantInfo = array_merge($variantInfo, $opt);
+        }
+
+        if (isset($options['bundle_options'])) {
+            $opt = $this->getBundleOptions($options['bundle_options']);
+            $variantInfo = array_merge($variantInfo, $opt);
+        }
+
+        if (!empty($variantInfo)) {
+            $result = $this->getFormatedVariantInfo($variantInfo);
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array $options
+     * @return array
+     */
+    protected function getProductCustomOptions($options)
+    {
+        $arr = array();
+        foreach ($options as $option) {
+            $arr[] = $option['label'] . ': ' . $option['value'];
+        }
+
+        return $arr;
+    }
+
+    /**
+     * @param array $attributesInfo
+     * @return array
+     */
+    protected function getConfigurableOptions($attributesInfo)
+    {
+        $arr = array();
+        foreach ($attributesInfo as $option) {
+            $arr[] = $option['label'] . ': ' . $option['value'];
+        }
+        return $arr;
+    }
+
+    /**
+     * @param array $bundleOptions
+     * @return array
+     */
+    protected function getBundleOptions($bundleOptions)
+    {
+        $arr = array();
+        foreach ($bundleOptions as $option) {
+            $arr[] = $option['label'] . ': ' . $option['value'][0]['title'];
+        }
+        return $arr;
+    }
+
+    /**
+     * Concatenate all options to string
+     * @param array $arr
+     * @return string
+     */
+    //todo: new line symbol
+    protected function getFormatedVariantInfo($arr)
+    {
+        if (count($arr) == 1) {
+            $result = $arr[0];
+        } else {
+            $result = implode(', ', $arr);
+        }
+
+        if (isset($result) && strlen($result) > 255) {
+            $result = substr($result, 0, 255);
+        }
+
+        return $result;
+    }
+
+
+
+    /**
+     * @param Mage_Sales_Model_Quote $quote
+     * @return float[]
+     */
+    public function getAmountsFromQuote($quote)
+    {
+        $result['amount_cents'] = $quote->getGrandTotal();
+        $result['tax_cents'] = 0;
+        $result['shipping_cents'] = 0;
+        foreach ($quote->getAllAddresses() as $address) {
+            /** @var Mage_Sales_Model_Quote_Address $address */
+            $result['tax_cents'] += $address->getTaxAmount();
+            $result['shipping_cents'] += $address->getShippingAmount();
+        }
+
+        return $result;
+    }
+
+
 
 }

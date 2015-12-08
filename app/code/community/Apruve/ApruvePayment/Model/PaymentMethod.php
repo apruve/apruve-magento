@@ -73,13 +73,14 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
         /** @var Mage_Sales_Model_Order $order */
         $order = $payment->getOrder();
 
-        $amounts = Mage::helper('apruvepayment')->getAmountsFromQuote($order->getQuote());
+        /** @var Apruve_ApruvePayment_Model_Api_Payment $paymentHelper */
+        $paymentHelper = Mage::getModel('apruvepayment/api_payment', $order);
 
         $updateResult = $rest->updatePaymentRequest(
             $token,
-            $amounts['amount_cents'],
-            $amounts['tax_cents'],
-            $amounts['shipping_cents'],
+            $paymentHelper->getAmount('amount_cents'),
+            $paymentHelper->getAmount('shipping_cents'),
+            $paymentHelper->getAmount('tax_cents'),
             $order->getIncrementId()
         );
 
@@ -87,7 +88,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
             Mage::throwException('Couldn\'t update order totals to Apruve');
         }
 
-        $apruvePayment = $rest->postPayment($token, $amount);
+        $apruvePayment = $rest->postPayment($token, $paymentHelper->getPayment());
         if (!$apruvePayment) {
             Mage::throwException('Apruve couldn\'t process order information');
         }
