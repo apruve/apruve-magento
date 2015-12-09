@@ -29,6 +29,8 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
 {
     private $quote;
 
+    private $amounts;
+
     /**
      * Post request general fields
      * @var array
@@ -106,6 +108,23 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
         return hash('sha256', $concatString);
     }
 
+    /**
+     * Return amount_cents, shipping_cents or tax_cents
+     * @param $key
+     * @return float | bool
+     */
+    public function getAmount($key)
+    {
+        if (empty($this->amounts)) {
+            $this->amounts = $this->getAmountsFromQuote($this->quote);
+        }
+
+        if (isset($this->amounts[$key])) {
+            return $this->amounts[$key];
+        }
+
+        return false;
+    }
 
     /**
      * Build Payment Request Array
@@ -113,18 +132,37 @@ class Apruve_ApruvePayment_Model_Api_PaymentRequest extends Apruve_ApruvePayment
      */
     protected function setPaymentRequest()
     {
-        $amounts = $this->getAmountsFromQuote($this->quote);
 
         $paymentRequest = array(
             'merchant_id' => $this->getMerchantKey(),
-            'amount_cents' => $this->convertPrice($amounts['amount_cents']),
+            'amount_cents' => $this->convertPrice($this->getAmount('amount_cents')),
             'currency' => 'USD',
-            'tax_cents' => $this->convertPrice($amounts['tax_cents']),
-            'shipping_cents' => $this->convertPrice($amounts['shipping_cents']),
+            'tax_cents' => $this->convertPrice($this->getAmount('tax_cents')),
+            'shipping_cents' => $this->convertPrice($this->getAmount('shipping_cents')),
             'line_items' => $this->getLineItems($this->quote)
         );
 
         return $paymentRequest;
+    }
+
+    public function updatePaymentRequest($token, $orderId)
+    {
+        /** @var Apruve_ApruvePayment_Model_Api_Rest $rest */
+        $rest = Mage::getModel('apruvepayment/api_rest');
+        $pRequest = Mage::registry('apruve_request_updated' . $token);
+        if ($pRequest === null) {
+
+            $pRequest =  $rest->updatePaymentRequest(
+                $token,
+                $this->getAmount('amount_cents'),
+                $this->getAmount('shipping_cents'),
+                $this->getAmount('tax_cents'),
+                $orderId
+            );
+
+            Mage::register('apruve_request_updated' . $token, $pRequest);
+        }
+        return $pRequest;
     }
 
 

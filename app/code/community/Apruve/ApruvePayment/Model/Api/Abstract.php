@@ -246,6 +246,19 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
         return $result;
     }
 
+    /**
+     * @param Mage_Sales_Model_Order $order
+     * @return float[]
+     */
+    public function getAmountsFromOrder($order)
+    {
+        $result['amount_cents'] = $order->getGrandTotal();
+        $result['tax_cents'] = $order->getTaxAmount();
+        $result['shipping_cents'] = $order->getShippingAmount();
+
+        return $result;
+    }
+
 
 
 }

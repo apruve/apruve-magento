@@ -92,6 +92,32 @@ class Apruve_ApruvePayment_Model_Api_Rest extends Apruve_ApruvePayment_Model_Api
     }
 
     /**
+     * Finalize paymentRequest object
+     *
+     * @param string $paymentRequestId
+     *
+     * @return bool
+     */
+    public function finalizePaymentRequest($paymentRequestId)
+    {
+        $c = curl_init($this->getFinalizePaymentRequestUrl($paymentRequestId));
+
+        curl_setopt($c, CURLOPT_HTTPHEADER, $this->getHeaders());
+        curl_setopt($c, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
+        $response = curl_exec($c);
+        $http_status = curl_getinfo($c, CURLINFO_HTTP_CODE);
+        curl_close($c);
+
+
+        if ($http_status == '200') {
+            return json_decode($response);
+        } else {
+            return false;
+        }
+    }
+
+    /**
      * GET Apruve Payment Status
      * Check whether given status is same as in Apruve.com
      * @param $status
@@ -126,5 +152,15 @@ class Apruve_ApruvePayment_Model_Api_Rest extends Apruve_ApruvePayment_Model_Api
     protected function getUpdatePaymentRequestUrl($paymentRequestId)
     {
         return $this->getBaseUrl(true) . $this->getApiUrl() . 'payment_requests/' . $paymentRequestId;
+    }
+
+    /**
+     * Get url for paymentRequest finalizing
+     * @param string $paymentRequestId
+     * @return string
+     */
+    protected function getFinalizePaymentRequestUrl($paymentRequestId)
+    {
+        return $this->getBaseUrl(true) . $this->getApiUrl() . 'payment_requests/' . $paymentRequestId . '/finalize';
     }
 }

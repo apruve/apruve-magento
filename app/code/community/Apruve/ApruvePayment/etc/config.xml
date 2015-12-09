@@ -15,6 +15,17 @@
                 </args>
             </apruvepayment>
         </routers>
+        <events>
+            <checkout_quote_destroy>
+                <observers>
+                    <module>
+                        <type>singleton</type>
+                        <class>apruvepayment/observer</class>
+                        <method>finalizePayment</method>
+                    </module>
+                </observers>
+            </checkout_quote_destroy>
+        </events>
          <layout>
             <updates>
                 <apruvepayment>

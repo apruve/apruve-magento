@@ -44,7 +44,7 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
     public function getAmount($key)
     {
         if (empty($this->amounts)) {
-            $this->amounts = $this->getAmountsFromQuote($this->quote);
+            $this->amounts = $this->getAmountsFromOrder($this->order);
         }
 
         if (isset($this->amounts[$key])) {
@@ -63,7 +63,8 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
     {
         return array(
             'amount_cents' => $this->convertPrice($this->getAmount('amount_cents')),
-            'payment_items' => $this->getLineItems($this->order)
+            'payment_items' => $this->getLineItems($this->order),
+            'invoice_on_create' => !$this->quote->getIsMultiShipping()
         );
     }
 
