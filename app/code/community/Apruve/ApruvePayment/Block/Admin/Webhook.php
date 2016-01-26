@@ -24,7 +24,7 @@ class Apruve_ApruvePayment_Block_Admin_Webhook extends Mage_Adminhtml_Block_Syst
     {
         $merchantKey = Mage::getStoreConfig('payment/apruvepayment/merchant');
         $apiKey = Mage::getStoreConfig('payment/apruvepayment/api');
-        $baseFrontUrl = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
+        $baseFrontUrl = Mage::app()->getDefaultStoreView()->getUrl();
         $moduleControllerAction = 'apruvepayment/webhook/updateOrderStatus?';
         if(!is_null($merchantKey) && !is_null($apiKey)) {
             $data = $apiKey.$merchantKey;
