@@ -83,7 +83,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
         if($this->getIsTestMode()) {
             return $http.'test.apruve.com/';
         } else {
-            return $http.'www.apruve.com/';
+            return $http.'app.apruve.com/';
         }
     }
 
