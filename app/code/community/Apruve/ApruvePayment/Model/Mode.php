@@ -66,7 +66,7 @@ class Apruve_ApruvePayment_Model_Mode
     public function toSrcArray()
     {
         return array(
-            0 => "https://www.apruve.com/js/apruve.js?display=compact",
+            0 => "https://app.apruve.com/js/apruve.js?display=compact",
             1 => "https://test.apruve.com/js/apruve.js?display=compact",
         );
     }
