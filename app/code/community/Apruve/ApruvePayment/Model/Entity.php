@@ -94,31 +94,4 @@ class Apruve_ApruvePayment_Model_Entity extends Mage_Core_Model_Abstract
 		return false;
 	}
 
-	/**
-	 * Retrieve only the apruve item ids that are shipped and invoiced in an array
-	 *
-	 * @param Mage_Sales_Model_Order_Shipment $shipment
-	 * @return []|bool
-	 */
-	public function getShippedInvoiceItemIds($shipment)
-	{
-		if($this->getId() && $shipment->getId()) {
-			$shipmentItems = Mage::helper('apruvepayment')->getAllVisibleItems($shipment);
-			$invoiceItems = Mage::helper('core')->jsonDecode($this->getApruveItemId());
-
-			$itemIds = [];
-			foreach ($shipmentItems as $item) {
-				$sku = $item->getSku();
-				foreach ($invoiceItems as $invoiceItem) {
-					if($invoiceItem['sku'] == $sku) {
-						$itemIds[] = ['id' => $invoiceItem['id']];
-						break;
-					}
-				}
-			}
-			
-			return $itemIds;
-		}
-		return false;
-	}
 }

@@ -113,8 +113,19 @@ class Apruve_ApruvePayment_Model_Api_Rest_Shipment extends Apruve_ApruvePayment_
      */
     protected function _getShipmentData($shipment, $invoice)
     {
-        $apruveEntity = Mage::getModel('apruvepayment/entity')->loadByInvoiceId($invoice->getIncrementId());
-        $items = $apruveEntity->getShippedInvoiceItemIds($shipment);
+        $items = [];
+
+        foreach ($shipment->getAllItems() as $item) {
+            $shipmentItem = [];
+            $shipmentItem['price_total_cents'] = $this->convertPrice($item->getPriceInclTax() * $item->getQty());
+            $shipmentItem['tax_cents'] = $this->convertPrice($item->getTaxAmount());
+            $shipmentItem['description'] = $item->getDescription();
+            $shipmentItem['title'] = $item->getName();
+            $shipmentItem['sku'] = $item->getSku();
+            $shipmentItem['price_ea_cents'] = $this->convertPrice($item->getPrice());
+            $shipmentItem['quantity'] = $item->getQty();
+            $items[] =  $shipmentItem;
+        }
 
         /* latest shipment comment */
         $comment = $this->_getShipmentComment($shipment);
@@ -123,13 +134,16 @@ class Apruve_ApruvePayment_Model_Api_Rest_Shipment extends Apruve_ApruvePayment_
         /* prepare invoice data */
         $data = json_encode([
             'amount_cents' => $this->convertPrice($invoice->getBaseGrandTotal()),
+            'tax_cents' => $this->convertPrice($invoice->getTaxAmount()),
+            'shipping_cents' => $this->convertPrice($invoice->getShippingAmount()),
             'shipper' => $trackingInfo->getTitle(),
             'tracking_number' => $trackingInfo->getTrackNumber(),
             'shipped_at' => $this->getDateFormatted($trackingInfo->getCreatedAt()),
             'delivered_at' => '',
             'currency' => $this->getCurrency(),
             'merchant_notes' => $comment->getComment(),
-            'invoice_items' => $items
+            'shipment_items' => $items,
+            'status' => 'FULFILLED'
         ]);
 
         return $data;
