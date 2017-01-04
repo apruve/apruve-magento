@@ -15,7 +15,7 @@
  *
  * @category   Apruve
  * @package    Apruve_Payment
- * @copyright  Copyright (coffee) 2014 Apruve, Inc. (http://www.apruve.com).
+ * @copyright  Copyright (coffee) 2017 Apruve, Inc. (http://www.apruve.com).
  * @license    http://opensource.org/licenses/Apache-2.0  Apache License, Version 2.0
  * @author     Echidna Team
  *
