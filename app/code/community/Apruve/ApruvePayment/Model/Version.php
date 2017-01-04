@@ -20,9 +20,9 @@
  */
 
 /**
- * Used in creating options for Yes|No config value selection
+ * Used in creating options for Version config value selection
  */
-class Apruve_ApruvePayment_Model_Mode
+class Apruve_ApruvePayment_Model_Version
 {
 
     /**
@@ -33,8 +33,8 @@ class Apruve_ApruvePayment_Model_Mode
     public function toOptionArray()
     {
         return array(
-            array('value' => 0, 'label'=>Mage::helper('apruvepayment')->__('live')),
-            array('value' => 1, 'label'=>Mage::helper('apruvepayment')->__('test')),
+            /*array('value' => 'v3', 'label'=>Mage::helper('apruvepayment')->__('V3')),*/
+            array('value' => 'v4', 'label'=>Mage::helper('apruvepayment')->__('V4')),
         );
     }
 
@@ -46,9 +46,8 @@ class Apruve_ApruvePayment_Model_Mode
     public function toArray()
     {
         return array(
-            0 => Mage::helper('apruvepayment')->__('live'),
-            1 => Mage::helper('apruvepayment')->__('test'),
-            2 => Mage::helper('apruvepayment')->__('staging'),
+            /*'v3' => Mage::helper('apruvepayment')->__('V3'),*/
+            'v4' => Mage::helper('apruvepayment')->__('V4'),
         );
     }
 }

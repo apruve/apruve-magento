@@ -28,6 +28,15 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                         </mode>
+                        <version translate="label">
+                            <label>Version</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>apruvepayment/version</source_model>
+                            <sort_order>2</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </version>
                         <autosubmit translate="label">
                             <label>Jump to next step of checkout when Apruve modal window closes</label>
                             <comment>disabling this option recommended only in case of compatibility issues</comment>
@@ -88,6 +97,24 @@
                             <show_in_store>0</show_in_store>
                             <frontend_class>validate-number</frontend_class>
                         </sort_order>
+                        <product_vendor translate="label">
+                            <label>Product Vendor Attribute</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>1000</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                            <comment>Optional: Please enter the product vendor/manufacturer attribute_code</comment>
+                        </product_vendor>
+                        <log translate="label">
+                            <label>Enable Log</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>1</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </log>
                     </fields>
                 </apruvepayment>
             </groups>

@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Magento
+ * Apruve
  *
  * NOTICE OF LICENSE
  *
@@ -17,6 +16,13 @@
  * @package    Apruve_Payment
  * @copyright  Copyright (coffee) 2014 Apruve, Inc. (http://www.apruve.com).
  * @license    http://opensource.org/licenses/Apache-2.0  Apache License, Version 2.0
+ *
+ */
+
+ /**
+ * Class Apruve_ApruvePayment_Model_Api_Abstract
+ *
+ * This is an abstract for Apruve payment gateway.
  */
 
 abstract class Apruve_ApruvePayment_Model_Api_Abstract
@@ -24,9 +30,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
     /**
      * @var string
      */
-    protected $_version = 'v3';
-    //protected $_testMode;
-
+    const DATE_FORMAT = DateTime::ATOM;
 
     /**
      * Generate headers for rest request
@@ -35,9 +39,107 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
     protected function getHeaders()
     {
         return array(
-            'Content-type: application/json',
-            'Apruve-Api-Key: ' . $this->getApiKey(),
-        );
+            "accept: application/json",
+            "apruve-api-key: " . $this->getApiKey(),
+            "content-type: application/json"
+          );
+    }
+
+    /**
+     * Get the API version selected for the store
+     * @return string
+     */
+    protected function getApiVersion()
+    {
+        return Mage::helper('apruvepayment')->getApiVersion();
+    }
+
+
+    /**
+     * Get api url part based on version
+     * @return string
+     */
+    protected function getApiUrl()
+    {
+        return 'api/'.$this->getApiVersion().'/';
+    }
+
+    /**
+     * Prepare the response array for the API call
+     *
+     * @var string|JSON $response
+     * @var string $url
+     * @var string $err
+     * @var string|integer $http_status
+     * @var string|[] $curlOptions
+     * @return string[] $result
+     */
+    protected function _prepareResponse($response, $url = '', $err = '', $http_status = '', $curlOptions = '')
+    {
+        $result = [];
+        $success = true;
+        $message = '';
+        if ($err) {
+          $message = "Request Error:" . $err;
+          $success = false;
+        }
+
+        if ($http_status < 200 || $http_status >= 300) {
+          $message = "Request Error: Request could not be processed";
+          $success = false;
+        }
+
+        $result['success'] = $success;
+        $result['code'] = $http_status;
+        $result['messsage'] = $message;
+        $result['response'] = Mage::helper('core')->jsonDecode($response);
+        $result['post_data'] = $curlOptions;
+        $result['url'] = $url;
+        Mage::helper('apruvepayment')->logException($result);
+        return $result;
+    }
+
+    /**
+     * Returns a formatted date based on the constant DATE_FORMAT
+     *
+     * @return date
+     */
+    protected function getDateFormatted($date)
+    {
+        return date(self::DATE_FORMAT, strtotime($date));
+    }
+
+    /**
+     * Returns an expiry date in future for the order items created in apruve
+     *
+     * @return date
+     */
+    protected function getExpiryDate()
+    {
+        return $this->getDateFormatted('+1 week');
+    }
+
+    /**
+     * Get the current store currency
+     *
+     * @return date
+     */
+    protected function getCurrency()
+    {
+        return Mage::app()->getStore()->getBaseCurrencyCode();
+    }
+
+    /**
+     * Get the order item's vendor/manufacturer data
+     *
+     * @return string
+     */
+    protected function getVendor($orderItem)
+    {
+        $product = $orderItem->getProduct();
+        $attributeCode = Mage::getStoreConfig('payment/apruvepayment/product_vendor');
+        $vendor = $product->getData($attributeCode);
+        return $vendor;
     }
 
     /**
@@ -71,32 +173,56 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
         return Mage::getStoreConfig('payment/apruvepayment/mode');
     }
 
+    /**
+     * Build Discount Line item
+     * @param Mage_Sales_Model_Quote|Mage_Sales_Model_Order $object
+     * @return array
+     */
+    protected function _getDiscountItem($object)
+    {
+        $helper = Mage::helper('apruvepayment');
+        $discountItem = [];
+        $discountItem['quantity'] = 1;
+        $discountItem['currency'] = $this->getCurrency();
+        $discountItem['description'] = $helper->__('Cart Discount');
+        $discountItem['sku'] = $helper->__('Discount');
+        $discountItem['title'] = $helper->__('Discount');
+
+        if($object instanceof Mage_Sales_Model_Quote) {
+            $discountAmount = $this->convertPrice($object->getBaseSubtotal() - $object->getBaseSubtotalWithDiscount());
+        } elseif($object instanceof Mage_Sales_Model_Order) {
+            $discountAmount = $this->convertPrice($object->getBaseDiscountAmount());
+        } elseif($object instanceof Mage_Sales_Model_Order_Invoice) {
+            $discountAmount = $this->convertPrice($object->getBaseDiscountAmount());
+        } else {
+            return false;
+        }
+        if($discountAmount) {
+            $discountAmount = -1 * abs($discountAmount);
+            $discountItem['price_ea_cents'] = $discountAmount;
+            $discountItem['price_total_cents'] = $discountAmount;
+
+            return $discountItem;
+        } else {
+            return false;
+        }
+    }
+
 
     /**
      * Get Apruve base url based on mode
      * @param bool $secure
      * @return string
      */
-    public function getBaseUrl($secure = false)
+    public function getBaseUrl($secure = true)
     {
         $http = $secure ? 'https://' : 'http://';
         if($this->getIsTestMode()) {
-            return $http.'test.apruve.com/';
+            return $http . 'test.apruve.com/';
         } else {
-            return $http.'app.apruve.com/';
+            return $http . 'apruve.com/';
         }
     }
-
-
-    /**
-     * Get api url part based on version
-     * @return string
-     */
-    protected function getApiUrl()
-    {
-        return 'api/'.$this->_version.'/';
-    }
-
 
     /**
      * Convert price to needed value
@@ -258,7 +384,4 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
 
         return $result;
     }
-
-
-
 }

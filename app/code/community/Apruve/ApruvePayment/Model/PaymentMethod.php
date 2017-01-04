@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Magento
+ * Apruve
  *
  * NOTICE OF LICENSE
  *
@@ -17,17 +16,39 @@
  * @package    Apruve_Payment
  * @copyright  Copyright (coffee) 2014 Apruve, Inc. (http://www.apruve.com).
  * @license    http://opensource.org/licenses/Apache-2.0  Apache License, Version 2.0
+ *
+ */
+
+/**
+ * This is for providing a new payment gateway (Apruve) for checkout.
  */
 class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method_Abstract
 {
-    protected $_code = 'apruvepayment';
-    protected $_formBlockType = 'apruvepayment/payment_form';
+    const PAYMENT_METHOD_CODE               = 'apruvepayment';
 
-    protected $_canAuthorize = true;
-    protected $_canCapture = true;
-    protected $_canVoid = true;
-    protected $_canUseCheckout = true;
-    protected $_canCreateBillingAgreement = true;
+    protected $_code                        = self::PAYMENT_METHOD_CODE;
+    protected $_formBlockType               = 'apruvepayment/payment_form';
+
+    protected $_canAuthorize                = true;
+    protected $_canCapture                  = true;
+    protected $_canVoid                     = true;
+    protected $_canUseInternal              = false;
+    protected $_canUseCheckout              = true;
+    protected $_canCreateBillingAgreement   = true;
+    protected $_isGateway                   = true;
+    protected $_canManageRecurringProfiles  = false;
+    protected $_canUseForMultishipping      = false;
+    protected $_canReviewPayment            = true;
+
+    /**
+     * Can edit order (renew order)
+     *
+     * @return bool
+     */
+    public function canEdit()
+    {
+        return false;
+    }
 
     /**
      * Assign data to info model instance
@@ -37,7 +58,6 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
      */
     public function assignData($data)
     {
-        //$result = parent::assignData($data);
         if (is_array($data)) {
             $this->getInfoInstance()->setAdditionalInformation('aprt', isset($data['aprt']) ? $data['aprt'] : null);
         } elseif ($data instanceof Varien_Object) {
@@ -50,11 +70,14 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
     /**
      * Check whether apruve payment request id(aprt) is exitst
      * @return Mage_Payment_Model_Abstract|void
+     * @throws Mage_Core_Exception
      */
     public function validate()
     {
+        parent::validate();
+
         if (!$this->getInfoInstance()->getAdditionalInformation('aprt')) {
-            Mage::throwException('Smth going wrong, try again to post order with apruve');
+            Mage::throwException('Something is going wrong, try again to post order with apruve.');
         }
     }
 
@@ -63,43 +86,87 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
      * @param Varien_Object $payment
      * @param float $amount
      * @return Mage_Payment_Model_Abstract|void
+     * @throws Mage_Core_Exception
      */
     public function authorize(Varien_Object $payment, $amount)
     {
+        parent::authorize($payment, $amount);
+        Mage::helper('apruvepayment')->logException('Authorize...');
+
         $additionalInformation = $payment->getAdditionalInformation();
         $token = $additionalInformation['aprt'];
-        /** @var Apruve_ApruvePayment_Model_Api_Rest $rest */
-        $rest = Mage::getModel('apruvepayment/api_rest');
+
         /** @var Mage_Sales_Model_Order $order */
         $order = $payment->getOrder();
 
-        /** @var Apruve_ApruvePayment_Model_Api_Payment $paymentHelper */
-        $paymentHelper = Mage::getModel('apruvepayment/api_payment', $order);
-        /** @var Apruve_ApruvePayment_Model_Api_PaymentRequest $paymentRequestHelper */
-        $paymentRequestHelper = Mage::getModel('apruvepayment/api_paymentRequest', $order->getQuote());
+        /** @var Apruve_ApruvePayment_Helper_Data $apiVersion */
+        $apiVersion = Mage::helper('apruvepayment')->getApiVersion();
 
-        $updateResult = $paymentRequestHelper->updatePaymentRequest($token, $order->getIncrementId());
-        if (!$updateResult) {
-            Mage::throwException('Couldn\'t update order totals to Apruve');
-        }
-        $apruvePayment = $rest->postPayment($token, $paymentHelper->getPayment());
-        if (!$apruvePayment) {
-            Mage::throwException('Apruve couldn\'t process order information');
+        /** @var Apruve_ApruvePayment_Model_Api_Rest_Order $orderApi */
+        $orderApi = Mage::getModel('apruvepayment/api_rest_order');
+
+        $updateResult = $orderApi->updateOrder($token, $order);
+        if (!$updateResult || !$updateResult['success']) {
+            Mage::throwException('Couldn\'t update order in Apruve.');
         }
 
-        $payment->setTransactionId($token . "_" . $apruvePayment->id)
-            ->setIsTransactionClosed(0);
         return $this;
     }
 
+    /**
+     * Captures a payment
+     *
+     * @param   Varien_Object $payment
+     * @return  bool
+     * @throws  Mage_Core_Exception
+     */
     public function capture(Varien_Object $payment, $amount)
     {
+        parent::capture($payment, $amount);
+        Mage::helper('apruvepayment')->logException('Capture...');
+
         if ($amount <= 0) {
             Mage::throwException(Mage::helper('paygate')->__('Invalid amount for capture.'));
         }
 
-        $payment->setAmount($amount)
-            ->setTransactionId($payment->getParentTransactionId() . '_capture');
+        $payment->setSkipTransactionCreation(true);
         return $this;
+    }
+
+    /**
+     * Check void availability
+     *
+     * @param   Varien_Object $payment
+     * @return  bool
+     */
+    public function canVoid(Varien_Object $payment)
+    {
+        if ($payment instanceof Mage_Sales_Model_Order_Invoice
+            || $payment instanceof Mage_Sales_Model_Order_Creditmemo
+        ) {
+            return false;
+        }
+        if ($payment->getAmountPaid()) {
+            $this->_canVoid = false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Attempt to void the authorization on cancelling
+     *
+     * @param Varien_Object $payment
+     * @return Apruve_ApruvePayment_Model_PaymentMethod | false
+     */
+    public function cancel(Varien_Object $payment)
+    {
+        Mage::helper('apruvepayment')->logException('Cancel...');
+
+        if (!$payment->getOrder()->getInvoiceCollection()->count()) {
+            return $this->void($payment);
+        }
+
+        return false;
     }
 }

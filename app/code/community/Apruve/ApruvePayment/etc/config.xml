@@ -1,10 +1,105 @@
 <?xml version="1.0"?>
 <config>
     <modules>
-       <Apruve_ApruvePayment>
-          <version>1.0.15</version>
-       </Apruve_ApruvePayment>
+        <Apruve_ApruvePayment>
+          <version>2.0.0</version>
+        </Apruve_ApruvePayment>
     </modules>
+    <global>
+        <models>
+            <apruvepayment>
+                <class>Apruve_ApruvePayment_Model</class>
+                <resourceModel>apruvepayment_resource</resourceModel>
+            </apruvepayment>
+            <apruvepayment_resource>
+                <class>Apruve_ApruvePayment_Model_Resource</class>
+                <entities>
+                    <entity>
+                        <table>apruve_entity</table>
+                    </entity>
+                </entities>
+            </apruvepayment_resource>
+            <sales>
+                <rewrite>
+                    <service_order>Apruve_ApruvePayment_Model_Sales_Service_Order</service_order>
+                </rewrite>
+            </sales>
+        </models>
+        <resources>
+            <apruvepayment_setup>
+                <setup>
+                    <module>Apruve_ApruvePayment</module>
+                </setup>
+            </apruvepayment_setup>
+            <apruvepayment_write>
+                <connection>
+                    <use>core_write</use>
+                </connection>
+            </apruvepayment_write>
+            <apruvepayment_read>
+                <connection>
+                    <use>core_read</use>
+                </connection>
+            </apruvepayment_read>
+        </resources>
+        <blocks>
+            <apruvepayment>
+                <class>Apruve_ApruvePayment_Block</class>
+            </apruvepayment>
+            <adminhtml>
+                <rewrite>
+                    <sales_order_view>Apruve_ApruvePayment_Block_Adminhtml_Sales_Order_View</sales_order_view>
+                </rewrite>
+            </adminhtml>
+        </blocks>
+        <helpers>
+            <apruvepayment>
+                <class>Apruve_ApruvePayment_Helper</class>
+            </apruvepayment>
+        </helpers>
+        <events>
+            <checkout_submit_all_after>
+                <observers>
+                    <apruvepayment>
+                        <class>apruvepayment/observer</class>
+                        <method>finalizeOrder</method>
+                    </apruvepayment>
+                </observers>
+            </checkout_submit_all_after>
+            <order_cancel_after>
+                <observers>
+                    <apruvepayment>
+                        <class>apruvepayment/observer</class>
+                        <method>cancelOrder</method>
+                    </apruvepayment>
+                </observers>
+            </order_cancel_after>
+            <sales_order_invoice_save_after>
+                <observers>
+                    <apruvepayment>
+                        <class>apruvepayment/observer</class>
+                        <method>createInvoice</method>
+                    </apruvepayment>
+                </observers>
+            </sales_order_invoice_save_after>
+            <sales_order_shipment_save_after>
+                <observers>
+                    <apruvepayment>
+                        <class>apruvepayment/observer</class>
+                        <method>createShipment</method>
+                    </apruvepayment>
+                </observers>
+            </sales_order_shipment_save_after>
+            <sales_order_shipment_comment_save_after>
+                <observers>
+                    <apruvepayment>
+                        <class>apruvepayment/observer</class>
+                        <method>createShipment</method>
+                    </apruvepayment>
+                </observers>
+            </sales_order_shipment_comment_save_after>
+        </events>
+    </global>
     <frontend>
         <routers>
             <apruvepayment>
@@ -15,17 +110,6 @@
                 </args>
             </apruvepayment>
         </routers>
-        <events>
-            <checkout_quote_destroy>
-                <observers>
-                    <module>
-                        <type>singleton</type>
-                        <class>apruvepayment/observer</class>
-                        <method>finalizePayment</method>
-                    </module>
-                </observers>
-            </checkout_quote_destroy>
-        </events>
          <layout>
             <updates>
                 <apruvepayment>
@@ -34,54 +118,18 @@
             </updates>
         </layout>
     </frontend>
-    <global>
-        <blocks>
-            <apruvepayment>
-                <class>Apruve_ApruvePayment_Block</class>
-            </apruvepayment>
-        </blocks>
-        <models>
-            <apruvepayment>
-                <class>Apruve_ApruvePayment_Model</class>
-            </apruvepayment>
-        </models>
-        <resources>
-            <apruvepayment_setup>
-                <setup>
-                    <module>Apruve_ApruvePayment</module>
-                    <class>Apruve_ApruvePayment_Model_Mysql4_Setup</class>
-                </setup>
-                <connection>
-                    <use>core_setup</use>
-                </connection>
-            </apruvepayment_setup>
-            <apruvepayment_write>
-                <connection>
-                  <use>core_write</use>
-                </connection>
-            </apruvepayment_write>
-            <apruvepayment_read>
-               <connection>
-                <use>core_read</use>
-              </connection>
-            </apruvepayment_read>
-        </resources>
-        <helpers>
-            <apruvepayment>
-                <class>Apruve_ApruvePayment_Helper</class>
-            </apruvepayment>
-        </helpers>
-    </global>
     <default>
         <payment>
             <apruvepayment>
                 <mode>1</mode>
+                <version>v4</version>
                 <autosubmit>1</autosubmit>
                 <active>1</active>
                 <model>apruvepayment/paymentMethod</model>
                 <order_status>pending_payment</order_status>
                 <title>Pay with Apruve</title>
                 <payment_action>authorize</payment_action>
+                <log>0</log>
             </apruvepayment>
          </payment>
     </default>

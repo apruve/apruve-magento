@@ -23,41 +23,134 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
 {
     public function updateOrderStatusAction()
     {
-        $q = $this->_getHashedQueryString();
+        $hash = $this->_getHashedQueryString();
 
-        if(!isset($_GET[$q])) {
-            //do nothing
+        // if the hash doesn't match the data sent by Apruve terminate the code
+        if(!isset($_GET[$hash])) {
             header("HTTP/1.1 404 Not Found");
             exit;
         }
 
+        // if the hash matches the data sent by Apruve move forward with the appropriate process
         $input = file_get_contents('php://input');
         $data = json_decode($input);
 
-        $status = $data->status;
-        $paymentRequestId = $data->payment_request_id;
-        $paymentId = $data->payment_id;
-        Mage::log($data, null, 'webtex.log');
+        Mage::helper('apruvepayment')->logException($data);
+        try {
+            $event = $data->event;
+            $entity = $data->entity;
 
-        //todo: compare status by rest request
-        if($status == 'rejected') {
-            if(!$this->_cancelOrder($paymentRequestId, $paymentId)) {
+            // check the event triggered in Apruve to call appropriate action in Magento
+            if($event == 'invoice.closed') {
+                $invoiceId = $entity->merchant_invoice_id;
+                if(!$this->_capturePayment($invoiceId)) {
+                    header("HTTP/1.1 404 Not Found");
+                    exit;
+                };
+            } elseif($event == 'order.accepted' ) {
+                exit; // should not be triggering anything in magento
+
+                $orderId = $entity->merchant_order_id;
+                if(!$this->_changeOrderStatus($orderId)) {
+                    header("HTTP/1.1 404 Not Found");
+                    exit;
+                };
+            } elseif($event == 'order.canceled' ) {
+                $orderId = $entity->merchant_order_id;
+                if(!$this->_cancelOrder($orderId)) {
+                    header("HTTP/1.1 404 Not Found");
+                    exit;
+                };
+            } elseif($event == 'payment_term.accepted' ) {
                 header("HTTP/1.1 404 Not Found");
                 exit;
-            };
-        } elseif($status == 'captured' ) {
-            if(!$this->_addPayed($paymentRequestId, $paymentId)) {
-                header("HTTP/1.1 404 Not Found");
-                exit;
-            };
+            }
+        } catch(Exception $e) {
+            Mage::helper('apruvepayment')->logException('Error for transaction UUID: ' . $data->uuid . '. Message: ' . $e->getMessage());
         }
-
 
         header("HTTP/1.1 200");
         exit;
     }
 
+    /**
+     * Capture payment based on invoice increment ID
+     *
+     * @param string $orderId
+     * @return bool
+     */
+    protected function _capturePayment($invoiceId)
+    {
+        if($invoiceId) {
+            /** @var Mage_Sales_Model_Order_Invoice_Api $iApi */
+            $iApi = Mage::getModel('sales/order_invoice_api');
+            $iApi->capture($invoiceId);
+            return true;
+        }
+        return false;
+    }
 
+    /**
+     * Change the order status based on the order increment ID
+     *
+     * @param string $orderId
+     * @return bool
+     */
+    protected function _changeOrderStatus($orderId)
+    {
+        $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
+            Mage::helper('apruvepayment')->logException($order->getData());
+            Mage::helper('apruvepayment')->logException($orderId);
+
+        if($order && $order->getId() && !$order->isCanceled()) {
+            Mage::helper('apruvepayment')->logException('creating invoice...');
+            $result = $this->_createInvoice($order->getIncrementId());
+            return $result;
+        }
+        return false;
+    }
+
+    /**
+     * Change the order status based on the order increment ID
+     *
+     * @param string $orderId
+     * @return bool
+     */
+    protected function _createInvoice($orderId)
+    {
+        if($orderId) {
+            /** @var Mage_Sales_Model_Order_Invoice_Api $iApi */
+            $iApi = Mage::getModel('sales/order_invoice_api');
+            $invoiceId = $iApi->create($orderId, array());
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * cancel and order in magento based on Order Increment Id
+     *
+     * @param string $orderId
+     * @return bool
+     */
+    protected function _cancelOrder($orderId)
+    {
+        $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
+        if($order && $order->getId() && !$order->isCanceled()) {
+            $order->cancel();
+            $order->save();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Order and transaction
+     *
+     * @param string $paymentRequestId
+     * @param string $paymentId
+     * @return bool
+     */
     protected function _addPayed($paymentRequestId, $paymentId)
     {
         /** @var Mage_Sales_Model_Order_Payment_Transaction $transaction */
@@ -82,41 +175,17 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
         return false;
     }
 
-
-    protected function _cancelOrder($paymentRequestId, $paymentId)
-    {
-        /** @var Mage_Sales_Model_Order_Payment_Transaction $transaction */
-        $transaction = Mage::getModel('sales/order_payment_transaction')->getCollection()
-            ->addAttributeToFilter('txn_id', array('eq' => $paymentRequestId . "_" . $paymentId))
-            ->getFirstItem();
-        if (!$transaction->getId()) {
-            /** @var Mage_Sales_Model_Order_Payment_Transaction $transaction */
-            $transaction = Mage::getModel('sales/order_payment_transaction')->getCollection()
-                ->addAttributeToFilter('txn_id', array('eq' => $paymentRequestId))
-                ->getFirstItem();
-        }
-        if ($transaction->getId()) {
-            $payment = $transaction->getOrder()->getPayment();
-            $transaction->setOrderPaymentObject($payment);
-            $transaction->setIsClosed(true);
-            $transaction->save();
-            $order = $transaction->getOrder();
-            if($order && $order->getId() && !$order->isCanceled()) {
-                $order->cancel();
-                $order->save();
-                return true;
-            }
-        }
-        return false;
-    }
-
-
+    /**
+     * Get the hashed string id based on Apruve merchant id and API key 
+     *
+     * @return string
+     */
     protected function _getHashedQueryString()
     {
         $merchantKey = Mage::getStoreConfig('payment/apruvepayment/merchant');
         $apiKey = Mage::getStoreConfig('payment/apruvepayment/api');
         $data = $apiKey.$merchantKey;
-        $q = hash('sha256', $data);
-        return $q;
+        $hash = hash('sha256', $data);
+        return $hash;
     }
 }

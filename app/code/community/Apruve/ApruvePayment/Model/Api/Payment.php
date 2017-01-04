@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Magento
+ * Apruve
  *
  * NOTICE OF LICENSE
  *
@@ -17,23 +16,102 @@
  * @package    Apruve_Payment
  * @copyright  Copyright (coffee) 2014 Apruve, Inc. (http://www.apruve.com).
  * @license    http://opensource.org/licenses/Apache-2.0  Apache License, Version 2.0
+ *
  */
 
 
+/**
+ * Class Apruve_ApruvePayment_Model_Api_Payment
+ * Provide methods to build payment
+ * @see https://apruvit.atlassian.net/wiki/display/DOCCO/payment_request
+ */
 class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_Api_Abstract
 {
-    /** @var Mage_Sales_Model_Order  */
-    private $order;
+    private $_quote;
 
-    /** @var  Mage_Sales_Model_Quote */
-    private $quote;
+    private $_amounts;
 
-    private $amounts;
+    /**
+     * Post request general fields
+     * @var array
+     */
+    protected $_postFields = array(
+        //required
+        'merchant_id',
+        'amount_cents',
+        //optional
+        'currency',
+        'tax_cents',
+        'shipping_cents',
+        'line_items' => array(),
+    );
 
-    function __construct(Mage_Sales_Model_Order $order)
+    /**
+     * Line Items Fields
+     * @var array
+     */
+    protected $_lineItemFields = array(
+        //required
+        'title',
+        'amount_cents', // if qty -> should chanfe
+        'price_ea_cents',
+        'description',
+        'variant_info',
+        'sku',
+        'vendor',
+        'view_product_url',
+    );
+
+    /**
+     * @var array
+     */
+    protected $_paymentRequest;
+
+    /**
+     * Get current quote
+     * @return Mage_Sales_Model_Quote
+     */
+    public function getQuote()
     {
-        $this->order = $order;
-        $this->quote = $order->getQuote();
+        if($this->_quote == null) {
+            $this->_quote = Mage::getSingleton('checkout/session')->getQuote();
+        }
+
+        return $this->_quote;
+    }
+
+    /**
+     * Get json encoded payment request
+     * @return string
+     */
+    public function getPaymentRequestJSON()
+    {
+        return json_encode($this->_getPaymentRequest());
+    }
+
+    /**
+     * Get secure hash
+     * @see https://apruvit.atlassian.net/wiki/display/DOCCO/Checkout+Page+Tutorial#CheckoutPageTutorial-1b:CreatingaSecureHash
+     * @return string
+     */
+    public function getSecureHash()
+    {
+        $concatString = $this->getApiKey();
+
+        foreach ($this->_getPaymentRequest() as $val) {
+            if (!is_array($val)) {
+                $concatString .= $val;
+            } else {
+                foreach ($val as $v) {
+                    foreach ($v as $s) {
+                        $concatString .= $s;
+                    }
+
+                }
+            }
+        }
+
+        return hash('sha256', $concatString);
     }
 
     /**
@@ -44,7 +122,7 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
     public function getAmount($key)
     {
         if (empty($this->amounts)) {
-            $this->amounts = $this->getAmountsFromOrder($this->order);
+            $this->amounts = $this->getAmountsFromQuote($this->getQuote());
         }
 
         if (isset($this->amounts[$key])) {
@@ -55,42 +133,65 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
     }
 
     /**
-     * Generate payment request by given order
-     *
+     * Build Payment Request Array
      * @return array
      */
-    public function getPayment()
+    protected function _getPaymentRequest()
     {
-        return array(
-            'amount_cents' => $this->convertPrice($this->getAmount('amount_cents')),
-            'payment_items' => $this->getLineItems($this->order),
-            'issue_on_create' => !$this->quote->getIsMultiShipping()
-        );
+        if($this->_paymentRequest == null) {
+            $this->_paymentRequest = array(
+                'merchant_id' => $this->getMerchantKey(),
+                'amount_cents' => $this->convertPrice($this->getAmount('amount_cents')),
+                'currency' => $this->getCurrency(),
+                'tax_cents' => $this->convertPrice($this->getAmount('tax_cents')),
+                'shipping_cents' => $this->convertPrice($this->getAmount('shipping_cents')),
+                'line_items' => $this->getLineItems($this->getQuote())
+            );
+        }
+
+        return $this->_paymentRequest;
+    }
+
+    /**
+     * @param Mage_Sales_Model_Quote $quote
+     */
+    public function getShopperInfo($attrName)
+    {
+        $method = 'get' . ucfirst($attrName);
+        if ($this->getQuote()->getCustomerIsGuest()) {
+            return $this->getQuote()->getBillingAddress()->$method();
+        }
+
+        return $this->getQuote()->getCustomer()->$method();
     }
 
     /**
      * Build Line items array
-     * @param Mage_Sales_Model_Order $itemsParent
+     * @param Mage_Sales_Model_Quote $itemsParent
      * @return array
      */
     protected function getLineItems($itemsParent)
     {
         $result = array();
-        /** @var  Mage_Sales_Model_Order_Item[] $visibleItems */
+        /** @var Mage_Sales_Model_Quote_Item[] $visibleItems */
         $visibleItems = $itemsParent->getAllVisibleItems();
         foreach ($visibleItems as $item) {
 
             $result[] = array(
                 'title' => $item->getName(),
-                'amount_cents' => $this->convertPrice($item->getPrice()) * $item->getQtyOrdered(),
-                'price_ea_cents' => $this->convertPrice($item->getPrice()),
-                'quantity' => $item->getQtyOrdered(),
+                'amount_cents' => $this->convertPrice($item->getBaseRowTotal()),
+                'price_ea_cents' => $this->convertPrice($item->getBasePrice()),
+                'quantity' => $item->getQty(),
                 'description' => $this->getShortDescription($item),
                 'variant_info' => $this->getVariantInfo($item),
                 'sku' => $item->getSku(),
                 'view_product_url' => $item->getProduct()->getProductUrl(false),
             );
 
+        }
+        // get discount line item
+        if(($discountItem = $this->_getDiscountItem($itemsParent))) {
+            $result[] = $discountItem;
         }
 
         return $result;

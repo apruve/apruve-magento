@@ -1,7 +1,7 @@
 var ApruvePayment = Class.create();
 
 ApruvePayment.prototype = {
-    initialize: function (hash, pr, shopperName, shopperEmail, autoSubmit) {
+    initialize: function (hash, pr, shopperName, shopperEmail, autoSubmit, onContinue) {
         if (!apruve) {
             return false;
         }
@@ -12,15 +12,21 @@ ApruvePayment.prototype = {
         apruve.shopperName = shopperName;
         apruve.shopperEmail = shopperEmail;
         this.autoSubmit = autoSubmit;
+        this.onContinue = onContinue;
         this._onLoad();
     },
 
     _onLoad: function () {
-        if ($('apruveDiv') && !$('apruveBtn') && typeof(apruve) == 'object') {
-            apruve.loadButton();
-            this._resetApruveRadio();
-            this._prepareApruve();
+        if(this.onContinue) {
+            // initiate callback functions
             this._registerCallbacks();
+        } else {
+            if ($('apruveDiv') && !$('apruveBtn') && typeof(apruve) == 'object') {
+                apruve.loadButton();
+                this._resetApruveRadio();
+                this._prepareApruve();
+                this._registerCallbacks();
+            }
         }
     },
 
@@ -65,3 +71,5 @@ ApruvePayment.prototype = {
         }
     }
 };
+
+var aprt = '';
