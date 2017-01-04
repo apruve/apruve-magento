@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Magento
+ * Apruve
  *
  * NOTICE OF LICENSE
  *
@@ -17,6 +16,7 @@
  * @package    Apruve_Payment
  * @copyright  Copyright (coffee) 2014 Apruve, Inc. (http://www.apruve.com).
  * @license    http://opensource.org/licenses/Apache-2.0  Apache License, Version 2.0
+ *
  */
 
 /**
@@ -27,140 +27,35 @@
 class Apruve_ApruvePayment_Model_Api_Rest extends Apruve_ApruvePayment_Model_Api_Abstract
 {
     /**
-     * Send Payment object
-     * @param string $paymentRequestId
-     * @param array $payment
+     * Executes all the curl requests
      *
-     * @return bool
+     * @param $curlOptions string[]
+     * @return $response string
      */
-    public function postPayment($paymentRequestId, $payment)
+    public function execCurlRequest($url, $method = 'GET', $curlOptions = [])
     {
-        $data = json_encode($payment);
+        $curl = curl_init();
 
-        $c = curl_init($this->getPaymentUrl($paymentRequestId));
-
-        curl_setopt($c, CURLOPT_HTTPHEADER, $this->getHeaders());
-        curl_setopt($c, CURLOPT_POST, true);
-        curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($c, CURLOPT_POSTFIELDS, $data);
-        $response = curl_exec($c);
-        $http_status = curl_getinfo($c, CURLINFO_HTTP_CODE);
-        curl_close($c);
-
-        if ($http_status == '201') {
-            return json_decode($response);
-        } else {
-            return false;
-        }
-
-    }
-
-    /**
-     * Update paymentRequest object
-     * Availible fields to update are: amount_cents, shipping_cents, tax_cents
-     * @param string $paymentRequestId
-     * @param float $amount
-     * @param float $shipping
-     * @param float $tax
-     * @return bool
-     */
-    public function updatePaymentRequest($paymentRequestId, $amount, $shipping, $tax, $orderIncrementId)
-    {
-        $data = json_encode(array(
-            'merchant_order_id' => $orderIncrementId,
-            'amount_cents' => $this->convertPrice($amount),
-            'shipping_cents' => $this->convertPrice($shipping),
-            'tax_cents' => $this->convertPrice($tax),
+        curl_setopt_array($curl, array(
+          CURLOPT_URL => $url,
+          CURLOPT_RETURNTRANSFER => true,
+          CURLOPT_ENCODING => "",
+          CURLOPT_MAXREDIRS => 10,
+          CURLOPT_TIMEOUT => 30,
+          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+          CURLOPT_CUSTOMREQUEST => $method,
+          CURLOPT_HTTPHEADER => $this->getHeaders(),
         ));
 
-        $c = curl_init($this->getUpdatePaymentRequestUrl($paymentRequestId));
+        curl_setopt_array($curl, $curlOptions);
 
-        curl_setopt($c, CURLOPT_HTTPHEADER, $this->getHeaders());
-        curl_setopt($c, CURLOPT_CUSTOMREQUEST, "PUT");
-        curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($c, CURLOPT_POSTFIELDS, $data);
-        $response = curl_exec($c);
-        $http_status = curl_getinfo($c, CURLINFO_HTTP_CODE);
-        curl_close($c);
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+        $http_status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
+        curl_close($curl);
 
-        if ($http_status == '200') {
-            return json_decode($response);
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * Finalize paymentRequest object
-     *
-     * @param string $paymentRequestId
-     *
-     * @return bool
-     */
-    public function finalizePaymentRequest($paymentRequestId)
-    {
-        $c = curl_init($this->getFinalizePaymentRequestUrl($paymentRequestId));
-
-        curl_setopt($c, CURLOPT_HTTPHEADER, $this->getHeaders());
-        curl_setopt($c, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
-        $response = curl_exec($c);
-        $http_status = curl_getinfo($c, CURLINFO_HTTP_CODE);
-        curl_close($c);
-
-
-        if ($http_status == '200') {
-            return json_decode($response);
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * GET Apruve Payment Status
-     * Check whether given status is same as in Apruve.com
-     * @param $status
-     * @param $apiUrl
-     * @return bool
-     */
-    public function getApruveOrderStatus($apiUrl, $status)
-    {
-        $c = curl_init($apiUrl);
-        curl_setopt($c, CURLOPT_HTTPHEADER, $this->getHeaders());
-        curl_setopt($c, CURLOPT_CUSTOMREQUEST, "GET");
-        curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($c, CURLOPT_HEADER, true);
-    }
-
-    /**
-     * Get url for send payment
-     * @param string $paymentRequestId
-     * @return string
-     */
-    protected function getPaymentUrl($paymentRequestId)
-    {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'payment_requests/' . $paymentRequestId . '/payments';
-    }
-
-
-    /**
-     * Get url for update paymentRequest
-     * @param string $paymentRequestId
-     * @return string
-     */
-    protected function getUpdatePaymentRequestUrl($paymentRequestId)
-    {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'payment_requests/' . $paymentRequestId;
-    }
-
-    /**
-     * Get url for paymentRequest finalizing
-     * @param string $paymentRequestId
-     * @return string
-     */
-    protected function getFinalizePaymentRequestUrl($paymentRequestId)
-    {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'payment_requests/' . $paymentRequestId . '/finalize';
+        $result = $this->_prepareResponse($response, $url, $err, $http_status, $curlOptions);
+        return $result;
     }
 }

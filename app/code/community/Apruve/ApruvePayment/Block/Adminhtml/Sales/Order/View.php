@@ -1,6 +1,7 @@
 <?php
+
 /**
- * Magento
+ * Apruve
  *
  * NOTICE OF LICENSE
  *
@@ -14,15 +15,26 @@
  *
  * @category   Apruve
  * @package    Apruve_Payment
- * @copyright  Copyright (coffee) 2014 Apruve, Inc. (http://www.apruve.com).
+ * @copyright  Copyright (coffee) 2017 Apruve, Inc. (http://www.apruve.com).
  * @license    http://opensource.org/licenses/Apache-2.0  Apache License, Version 2.0
+ * @author     Echidna Team
+ *
  */
 
-class Apruve_ApruvePayment_Block_Payment_Form extends Mage_Payment_Block_Form
+/**
+ * Adminhtml sales order view
+ */
+class Apruve_ApruvePayment_Block_Adminhtml_Sales_Order_View extends Mage_Adminhtml_Block_Sales_Order_View
 {
-    protected function _construct()
+
+    protected function _isAllowedAction($action)
     {
-        parent::_construct();
-        $this->setTemplate('apruvepayment/payment/form.phtml');
+        if($action == 'invoice') {
+            $order = $this->getOrder();
+            if($order->getPayment()->getMethod() == Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE) {
+                return false;
+            }
+        }
+        return parent::_isAllowedAction($action);
     }
 }

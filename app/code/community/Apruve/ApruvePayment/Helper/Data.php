@@ -21,14 +21,11 @@
 class Apruve_ApruvePayment_Helper_Data extends Mage_Core_Helper_Abstract
 {
     /**
-     * @return Apruve_ApruvePayment_Model_Api_PaymentRequest
+     * @return Apruve_ApruvePayment_Model_Api_Payment
      */
-    public function getPaymentRequestApiModel()
+    public function getPaymentApiModel()
     {
-        return Mage::getModel(
-            'apruvepayment/api_paymentRequest',
-            Mage::getSingleton('checkout/session')->getQuote()
-        );
+        return Mage::getModel('apruvepayment/api_payment');
     }
 
     public function getMode()
@@ -38,6 +35,11 @@ class Apruve_ApruvePayment_Helper_Data extends Mage_Core_Helper_Abstract
         return $sourceArray[Mage::getStoreConfig('payment/apruvepayment/mode')];
     }
 
+    public function getApiVersion()
+    {
+        return Mage::getStoreConfig('payment/apruvepayment/version');
+    }
+
     public function isAutoSubmit()
     {
         return Mage::getStoreConfig('payment/apruvepayment/autosubmit');
@@ -45,8 +47,43 @@ class Apruve_ApruvePayment_Helper_Data extends Mage_Core_Helper_Abstract
 
     public function getSrc()
     {
-        $sourceModel = Mage::getModel('apruvepayment/mode');
-        $sourceArray = $sourceModel->toSrcArray();
-        return $sourceArray[Mage::getStoreConfig('payment/apruvepayment/mode')];
+        $apruveUrl = Mage::getModel('apruvepayment/api_payment')->getBaseUrl();
+        return $apruveUrl . 'js/apruve.js?display=compact';
+    }
+
+    /**
+     * Log the messages and data to apruve.log if log is enabled
+     *
+     * @var string|array|object $data
+     * @return void
+     */
+    public function logException($data)
+    {
+        $isEnabled = Mage::getStoreConfig('payment/apruvepayment/log');
+        if($isEnabled) {
+            Mage::log($data, 7, 'apruve.log', true);
+        }
+    }
+
+    /**
+     * Retrieve only the visible items from a item collection for order, invoice and shipment
+     *
+     * @param Mage_Sales_Model_Abstract $object
+     * @return Mage_Core_Model_Abstract[]
+     */
+    public function getAllVisibleItems($object)
+    {
+        $items = array();
+        foreach ($object->getItemsCollection() as $item) {
+            $orderItem = $item->getOrderItem();
+            if (!$orderItem->isDeleted() && !$orderItem->getParentItemId()) {
+                $qty = (int) $item->getQty();
+                $qty = $qty > 0 ? $qty : (int) $item->getQtyOrdered();
+                if ($qty) {
+                    $items[] =  $item;
+                }
+            }
+        }
+        return $items;
     }
 }

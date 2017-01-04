@@ -1,7 +1,7 @@
 <layout version="0.1.0">
-    <default>
+    <checkout_onepage_index>
         <reference name="head">
             <block type="core/template" name="apruve_js" template="apruvepayment/head.phtml" output="toHtml" />
         </reference>
-    </default>
+    </checkout_onepage_index>
 </layout>

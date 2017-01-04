@@ -19,23 +19,44 @@
  */
 ?>
 
+<?php
+$helper = Mage::helper('apruvepayment');
+$paymentApiModel = $helper->getPaymentApiModel();
+?>
+
 <div id="payment_form_apruvepayment">
-    Press continue to review order.
     <input type="hidden" id="aprt" value="" name="payment[aprt]"/>
 </div>
 
-<?php
-$helper = Mage::helper('apruvepayment');
-$paymentRequestModel = $helper->getPaymentRequestApiModel();
-?>
-
 <script type="text/javascript">
-    $('p_method_apruvepayment').up().innerHTML += '<div id="apruveDiv" style="display: inline-block; position: absolute; margin-top: -3px; margin-left: 7px;"></div>';
-    var sh = '<?php echo $paymentRequestModel->getSecureHash();?>';
-    var pr = <?php echo $paymentRequestModel->getPaymentRequestJSON();?>;
-    var shopperName = '<?php echo $paymentRequestModel->getShopperInfo('name');?>';
-    var shopperEmail = '<?php echo $paymentRequestModel->getShopperInfo('email');?>';
+    var sh = '<?php echo $paymentApiModel->getSecureHash();?>';
+    var pr = <?php echo $paymentApiModel->getPaymentRequestJSON();?>;
+    var shopperName = '<?php echo $paymentApiModel->getShopperInfo('name');?>';
+    var shopperEmail = '<?php echo $paymentApiModel->getShopperInfo('email');?>';
     var autoSubmit = '<?php echo $helper->isAutoSubmit();?>';
-    var oApruvePayment = new ApruvePayment(sh, pr, shopperName, shopperEmail, autoSubmit);
+    var paymentMethodCode = '<?php echo Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE; ?>';
+    document.getElementById("aprt").value = aprt;
+
+    Payment.prototype.save = Payment.prototype.save.wrap(function(save) {
+        var validator = new Validation(this.form);
+        if (this.validate() && validator.validate()) {
+            // DO WHAT YOU WANT TO DO BEFORE SAVE
+            var oApruvePayment = new ApruvePayment(sh, pr, shopperName, shopperEmail, autoSubmit, true);
+
+            var paymentMethod = '';
+            for(i in document.getElementsByName('payment[method]')) {
+                if(document.getElementsByName('payment[method]').hasOwnProperty(i) && document.getElementsByName('payment[method]')[i].checked) {
+                    paymentMethod = document.getElementsByName('payment[method]')[i].value;
+                }
+            }
+            if(paymentMethod == paymentMethodCode && document.getElementById("aprt").value == ''){
+                apruve.startCheckout();
+            }
+            if((paymentMethod == paymentMethodCode && document.getElementById("aprt").value !== '') || paymentMethod !== paymentMethodCode){
+                    aprt = document.getElementById("aprt").value;
+                    save(); // THIS WILL CALL CORE SAVE THAT WAS WRAPPED
+                }
+        }
+    });
 </script>
 
