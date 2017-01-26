@@ -218,7 +218,8 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
     {
         $http = $secure ? 'https://' : 'http://';
         if($this->getIsTestMode()) {
-            return $http . 'test.apruve.com/'; 
+//  @todo Don't Commit This Bad Boy
+            return 'http://localhost:3000/'; #return $http . 'test.apruve.com/';
         } else {
             return $http . 'app.apruve.com/'; 
         }
