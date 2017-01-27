@@ -110,42 +110,47 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
      */
     public function updateOrder($apruveOrderId, $order)
     {
+        $result = null;
         $lineItems = $this->_getLineItems($order);
 
         // get discount line item
         if (($discountItem = $this->_getDiscountItem($order))) {
             $lineItems[] = $discountItem;
         }
+        $corporateAccount = Mage::getModel('apruvepayment/api_rest_account');
+        $corporateAccount->getCorporateAccount($order->getCustomerEmail());
+        $shopper_id = $corporateAccount->getShopperId($order->getCustomerEmail());
+        $payment_term = $corporateAccount->getPaymentTerm();
 
-        $corporateAccount = Mage::getModel('api/rest/corporate_account');
-        $corporateAccountDetails = $corporateAccount->getCorporateAccount();
+        if ($shopper_id) {
+            $data = json_encode(array(
+                'order' => array(
+                    'merchant_id' => $this->getMerchantKey(),
+                    'merchant_order_id' => $order->getIncrementId(),
+                    'shopper_id' => $shopper_id,
+                    'payment_term' => $payment_term,
+                    'amount_cents' => $this->convertPrice($order->getBaseGrandTotal()),
+                    'shipping_cents' => $this->convertPrice($order->getBaseShippingAmount()),
+                    'tax_cents' => $this->convertPrice($order->getBaseTaxAmount()),
+                    'invoice_on_create' => 'false',
+                    'order_items' => $lineItems
+                )
+            ));
 
-        $data = json_encode(array(
-            'order' => array(
-                'merchant_id' => $this->getMerchantKey(),
-                'merchant_order_id' => $order->getIncrementId(),
-                'shopper_id' => '97b23fe52bc9a1b127cd5342620b14e1',
-                'amount_cents' => $this->convertPrice($order->getBaseGrandTotal()),
-                'shipping_cents' => $this->convertPrice($order->getBaseShippingAmount()),
-                'tax_cents' => $this->convertPrice($order->getBaseTaxAmount()),
-                'invoice_on_create' => 'false',
-                'order_items' => $lineItems
-            )
-        ));
+            $curlOptions = [];
+            $curlOptions[CURLOPT_POSTFIELDS] = $data;
 
-        $curlOptions = [];
-        $curlOptions[CURLOPT_POSTFIELDS] = $data;
+            if (@$apruveOrderId === null) {
+                $curlAction = 'POST';
+            } else {
+                $curlAction = 'PUT';
+            }
 
-        if (@$apruveOrderId === null) {
-            $curlAction = 'POST';
-        } else {
-            $curlAction = 'PUT';
-        }
-
-        $result = $this->execCurlRequest($this->_getUpdateOrderUrl($apruveOrderId), $curlAction, $curlOptions);
-        if ($result['success'] == true) {
-            Mage::helper('apruvepayment')->logException('Order updated successfully...');
-            $this->_updateOrderId($apruveOrderId, $order);
+            $result = $this->execCurlRequest($this->_getUpdateOrderUrl($apruveOrderId), $curlAction, $curlOptions);
+            if ($result['success'] == true) {
+                Mage::helper('apruvepayment')->logException('Order updated successfully...');
+                $this->_updateOrderId($apruveOrderId, $order);
+            }
         }
         return $result;
     }
@@ -208,12 +213,11 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
         $items = array();
 
         foreach ($order->getAllVisibleItems() as $item) {
-//            1+1;
             $items[] = array(
                 'title' => $item->getName(),
                 'description' => $item->getDescription(),
-                'price_total_cents' => $item->getRowTotal(),
-                'price_ea_cents' => $item->getPrice(),
+                'price_total_cents' => $item->getRowTotal() * 100,
+                'price_ea_cents' => $item->getPrice() * 100,
                 'quantity' => $item->getQtyOrdered(),
                 'sku' => $item->getSku(),
                 'view_product_url' => $item->getProduct()->getUrlInStore()
