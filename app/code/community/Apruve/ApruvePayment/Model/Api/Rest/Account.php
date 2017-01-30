@@ -60,10 +60,13 @@ class Apruve_ApruvePayment_Model_Api_Rest_Account extends Apruve_ApruvePayment_M
         $result = $this->execCurlRequest($this->_getCorporateAccountUrl(), 'GET', $curlOptions);
 
         if ($result) {
+            if($result['success'] == false){
+                throw new Exception($result['messsage']);
+            }
             $this->_fields = $result['response'];
             return $this->_fields;
         } else {
-            return null;
+            throw new Exception('An unknown error has occurred.  Please try again or contact Apruve support.');
         }
     }
 
