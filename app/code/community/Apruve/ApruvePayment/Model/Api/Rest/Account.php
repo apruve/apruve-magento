@@ -61,12 +61,12 @@ class Apruve_ApruvePayment_Model_Api_Rest_Account extends Apruve_ApruvePayment_M
 
         if ($result) {
             if($result['success'] == false){
-                throw new Exception($result['messsage']);
+                Mage::throwException(Mage::helper('apruvepayment')->__($result['messsage']));
             }
             $this->_fields = $result['response'];
             return $this->_fields;
         } else {
-            throw new Exception('An unknown error has occurred.  Please try again or contact Apruve support.');
+            Mage::throwException(Mage::helper('apruvepayment')->__('An unknown error has occurred.  Please try again or contact Apruve support.'));
         }
     }
 
@@ -84,7 +84,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Account extends Apruve_ApruvePayment_M
                 return $buyer['id'];
             }
         }
-        return null;
+        Mage::throwException(Mage::helper('apruvepayment')->__('Couldn\'t find a shopper with that email address.'));
     }
 
     /**
