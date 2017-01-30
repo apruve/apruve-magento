@@ -84,7 +84,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Account extends Apruve_ApruvePayment_M
                 return $buyer['id'];
             }
         }
-        Mage::throwException(Mage::helper('apruvepayment')->__('Couldn\'t find a shopper with that email address.'));
+        Mage::throwException(Mage::helper('apruvepayment')->__('Couldn\'t find a shopper with that email address at Apruve.'));
     }
 
     /**
