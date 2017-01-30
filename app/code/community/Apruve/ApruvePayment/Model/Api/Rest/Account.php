@@ -80,7 +80,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Account extends Apruve_ApruvePayment_M
     {
         $corperateAccountArray = $this->_fields[0];
         foreach ($corperateAccountArray['authorized_buyers'] as $buyer) {
-            if ($buyer['email'] === $email) {
+            if (strcasecmp($buyer['email'],$email)) {
                 return $buyer['id'];
             }
         }
