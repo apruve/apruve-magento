@@ -148,6 +148,9 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
 
             $result = $this->execCurlRequest($this->_getUpdateOrderUrl($apruveOrderId), $curlAction, $curlOptions);
             if ($result['success'] == true) {
+                if($apruveOrderId == null){
+                    $apruveOrderId = $result['response']['id'];
+                }
                 Mage::helper('apruvepayment')->logException('Order updated successfully...');
                 $this->_updateOrderId($apruveOrderId, $order);
             }
