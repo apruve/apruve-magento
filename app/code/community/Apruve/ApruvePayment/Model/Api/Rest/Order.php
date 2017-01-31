@@ -104,11 +104,29 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
     /**
      * Update an existing order by its ID in apruve
      *
+     * This also determines if the order is from the frontend or the backend
+     *
      * @param string $apruveOrderId
      * @param Mage_Sales_Model_Order $order
      * @return string $result
      */
     public function updateOrder($apruveOrderId, $order)
+    {
+        if (Mage::app()->getStore()->isAdmin()) {
+            return $this->_updateAdminOrder($apruveOrderId, $order);
+        } else {
+            return $this->_updateFrontendOrder($apruveOrderId, $order);
+        }
+    }
+
+    /**
+     * Update an existing admin order by its ID in apruve
+     *
+     * @param string $apruveOrderId
+     * @param Mage_Sales_Model_Order $order
+     * @return string $result
+     */
+    protected function _updateAdminOrder($apruveOrderId, $order)
     {
         $result = null;
         $lineItems = $this->_getLineItems($order);
@@ -148,12 +166,46 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
 
             $result = $this->execCurlRequest($this->_getUpdateOrderUrl($apruveOrderId), $curlAction, $curlOptions);
             if ($result['success'] == true) {
-                if($apruveOrderId == null){
+                if ($apruveOrderId == null) {
                     $apruveOrderId = $result['response']['id'];
                 }
                 Mage::helper('apruvepayment')->logException('Order updated successfully...');
                 $this->_updateOrderId($apruveOrderId, $order);
             }
+        }
+        return $result;
+    }
+
+    /**
+     * Update an existing frontend order by its ID in apruve
+     *
+     * @param string $apruveOrderId
+     * @param Mage_Sales_Model_Order $order
+     * @return string $result
+     */
+    protected function _updateFrontendOrder($apruveOrderId, $order)
+    {
+        $lineItems = [];
+        // get discount line item
+        if(($discountItem = $this->_getDiscountItem($order))) {
+            $lineItems[] = $discountItem;
+        }
+        $data = json_encode(array(
+            'order' => array(
+                'merchant_order_id' => $order->getIncrementId(),
+                'amount_cents'      => $this->convertPrice($order->getBaseGrandTotal()),
+                'shipping_cents'    => $this->convertPrice($order->getBaseShippingAmount()),
+                'tax_cents'         => $this->convertPrice($order->getBaseTaxAmount()),
+                'invoice_on_create' => 'false',
+                'order_items'       => $lineItems
+            )
+        ));
+        $curlOptions = [];
+        $curlOptions[CURLOPT_POSTFIELDS] = $data;
+        $result = $this->execCurlRequest($this->_getUpdateOrderUrl($apruveOrderId), 'PUT', $curlOptions);
+        if($result['success'] == true) {
+            Mage::helper('apruvepayment')->logException('Order updated successfully...');
+            $this->_updateOrderId($apruveOrderId, $order);
         }
         return $result;
     }
