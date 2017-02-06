@@ -18,7 +18,6 @@
  * @copyright  Copyright (coffee) 2014 Apruve, Inc. (http://www.apruve.com).
  * @license    http://opensource.org/licenses/Apache-2.0  Apache License, Version 2.0
  */
-
 class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_Action
 {
     public function updateOrderStatusAction()
@@ -26,7 +25,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
         $hash = $this->_getHashedQueryString();
 
         // if the hash doesn't match the data sent by Apruve terminate the code
-        if(!isset($_GET[$hash])) {
+        if (!isset($_GET[$hash])) {
             header("HTTP/1.1 404 Not Found");
             exit;
         }
@@ -41,31 +40,34 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
             $entity = $data->entity;
 
             // check the event triggered in Apruve to call appropriate action in Magento
-            if($event == 'invoice.closed') {
+            if ($event == 'invoice.closed') {
                 $invoiceId = $entity->merchant_invoice_id;
-                if(!$this->_capturePayment($invoiceId)) {
+                if (!$this->_capturePayment($invoiceId)) {
                     header("HTTP/1.1 404 Not Found");
                     exit;
                 };
-            } elseif($event == 'order.accepted' ) {
+            } elseif ($event == 'order.accepted') {
                 exit; // should not be triggering anything in magento
 
                 $orderId = $entity->merchant_order_id;
-                if(!$this->_changeOrderStatus($orderId)) {
+                if (!$this->_changeOrderStatus($orderId)) {
                     header("HTTP/1.1 404 Not Found");
                     exit;
                 };
-            } elseif($event == 'order.canceled' ) {
+            } elseif ($event == 'order.canceled') {
                 $orderId = $entity->merchant_order_id;
-                if(!$this->_cancelOrder($orderId)) {
+                if (!$this->_cancelOrder($orderId)) {
                     header("HTTP/1.1 404 Not Found");
                     exit;
                 };
-            } elseif($event == 'payment_term.accepted' ) {
-                header("HTTP/1.1 404 Not Found");
-                exit;
+            } elseif ($event == 'payment_term.accepted') {
+                $orderId = $entity->merchant_order_id;
+                if (!$this->_paymentTermAccepted($orderId)) {
+                    header("HTTP/1.1 404 Not Found");
+                    exit;
+                };
             }
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             Mage::helper('apruvepayment')->logException('Error for transaction UUID: ' . $data->uuid . '. Message: ' . $e->getMessage());
         }
 
@@ -81,7 +83,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
      */
     protected function _capturePayment($invoiceId)
     {
-        if($invoiceId) {
+        if ($invoiceId) {
             /** @var Mage_Sales_Model_Order_Invoice_Api $iApi */
             $iApi = Mage::getModel('sales/order_invoice_api');
             $iApi->capture($invoiceId);
@@ -99,10 +101,10 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
     protected function _changeOrderStatus($orderId)
     {
         $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
-            Mage::helper('apruvepayment')->logException($order->getData());
-            Mage::helper('apruvepayment')->logException($orderId);
+        Mage::helper('apruvepayment')->logException($order->getData());
+        Mage::helper('apruvepayment')->logException($orderId);
 
-        if($order && $order->getId() && !$order->isCanceled()) {
+        if ($order && $order->getId() && !$order->isCanceled()) {
             Mage::helper('apruvepayment')->logException('creating invoice...');
             $result = $this->_createInvoice($order->getIncrementId());
             return $result;
@@ -116,9 +118,32 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
      * @param string $orderId
      * @return bool
      */
+    protected function _paymentTermAccepted($orderId)
+    {
+        $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
+        Mage::helper('apruvepayment')->logException($order->getData());
+        Mage::helper('apruvepayment')->logException($orderId);
+
+        if ($order) {
+            Mage::helper('apruvepayment')->logException('creating payment accepted...');
+
+            $order->setStatus('buyer_approved');
+
+            $order->save();
+            return true;
+        }
+        return false;
+    }
+
+    /**Ball
+     * Change the order status based on the order increment ID
+     *
+     * @param string $orderId
+     * @return bool
+     */
     protected function _createInvoice($orderId)
     {
-        if($orderId) {
+        if ($orderId) {
             /** @var Mage_Sales_Model_Order_Invoice_Api $iApi */
             $iApi = Mage::getModel('sales/order_invoice_api');
             $invoiceId = $iApi->create($orderId, array());
@@ -136,7 +161,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
     protected function _cancelOrder($orderId)
     {
         $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
-        if($order && $order->getId() && !$order->isCanceled()) {
+        if ($order && $order->getId() && !$order->isCanceled()) {
             $order->cancel();
             $order->save();
             return true;
@@ -176,7 +201,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
     }
 
     /**
-     * Get the hashed string id based on Apruve merchant id and API key 
+     * Get the hashed string id based on Apruve merchant id and API key
      *
      * @return string
      */
@@ -184,7 +209,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
     {
         $merchantKey = Mage::getStoreConfig('payment/apruvepayment/merchant');
         $apiKey = Mage::getStoreConfig('payment/apruvepayment/api');
-        $data = $apiKey.$merchantKey;
+        $data = $apiKey . $merchantKey;
         $hash = hash('sha256', $data);
         return $hash;
     }
