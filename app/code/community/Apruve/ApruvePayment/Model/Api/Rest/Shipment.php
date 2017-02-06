@@ -191,6 +191,11 @@ class Apruve_ApruvePayment_Model_Api_Rest_Shipment extends Apruve_ApruvePayment_
         $apruveShipmentId = isset($result['response']['id']) ? $result['response']['id'] : '';
         if($result['success'] == true) {
             $this->_updateShipmentId($apruveShipmentId, $shipment);
+            $order = Mage::getModel('sales/order')->loadByIncrementId($shipment->getOrder());
+            if($order->getStatus() == 'buyer_approved'){
+                $order->setStatus('pending');
+                $order->save();
+            }
         }
         return $result;
     }
