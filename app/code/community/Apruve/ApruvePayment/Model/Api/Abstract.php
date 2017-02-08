@@ -85,8 +85,13 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
         }
 
         if ($http_status < 200 || $http_status >= 300) {
-          $message = "Request Error: Request could not be processed";
-          $success = false;
+            $response_decoded = json_decode($response);
+            if (isset($response_decoded->error)) {
+                $message = $response_decoded->error;
+            } else {
+                $message = "Request Error: Request could not be processed";
+            }
+            $success = false;
         }
 
         $result['success'] = $success;
