@@ -99,6 +99,19 @@
                 </observers>
             </sales_order_shipment_comment_save_after>
         </events>
+        <sales>
+            <order>
+                <states>
+                    <buyer_approved translate="label">
+                        <label>Buyer Approved</label>
+                        <statuses>
+                            <order_received default="0"/>
+                        </statuses>
+                        <visible_on_front>1</visible_on_front>
+                    </buyer_approved>
+                </states>
+            </order>
+        </sales>
     </global>
     <frontend>
         <routers>

@@ -24,21 +24,21 @@
  */
 class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method_Abstract
 {
-    const PAYMENT_METHOD_CODE               = 'apruvepayment';
+    const PAYMENT_METHOD_CODE = 'apruvepayment';
 
-    protected $_code                        = self::PAYMENT_METHOD_CODE;
-    protected $_formBlockType               = 'apruvepayment/payment_form';
+    protected $_code = self::PAYMENT_METHOD_CODE;
+    protected $_formBlockType = 'apruvepayment/payment_form';
 
-    protected $_canAuthorize                = true;
-    protected $_canCapture                  = true;
-    protected $_canVoid                     = true;
-    protected $_canUseInternal              = false;
-    protected $_canUseCheckout              = true;
-    protected $_canCreateBillingAgreement   = true;
-    protected $_isGateway                   = true;
-    protected $_canManageRecurringProfiles  = false;
-    protected $_canUseForMultishipping      = false;
-    protected $_canReviewPayment            = true;
+    protected $_canAuthorize = true;
+    protected $_canCapture = true;
+    protected $_canVoid = true;
+    protected $_canUseInternal = true;
+    protected $_canUseCheckout = true;
+    protected $_canCreateBillingAgreement = true;
+    protected $_isGateway = true;
+    protected $_canManageRecurringProfiles = false;
+    protected $_canUseForMultishipping = false;
+    protected $_canReviewPayment = true;
 
     /**
      * Can edit order (renew order)
@@ -76,7 +76,18 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
     {
         parent::validate();
 
-        if (!$this->getInfoInstance()->getAdditionalInformation('aprt')) {
+        if (Mage::app()->getStore()->isAdmin()) {
+            $paymentInfo = $this->getInfoInstance();
+            if ($paymentInfo instanceof Mage_Sales_Model_Order_Payment) {
+                $billingCountry = $paymentInfo->getOrder()->getBillingAddress()->getCountryId();
+            } else {
+                $billingCountry = $paymentInfo->getQuote()->getBillingAddress()->getCountryId();
+            }
+            if (!$this->canUseForCountry($billingCountry)) {
+                Mage::throwException($this->_getHelper()->__('Selected payment type is not allowed for billing country.'));
+            }
+            return $this;
+        } elseif (!$this->getInfoInstance()->getAdditionalInformation('aprt')) {
             Mage::throwException('Something is going wrong, try again to post order with apruve.');
         }
     }
@@ -104,6 +115,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
 
         /** @var Apruve_ApruvePayment_Model_Api_Rest_Order $orderApi */
         $orderApi = Mage::getModel('apruvepayment/api_rest_order');
+
 
         $updateResult = $orderApi->updateOrder($token, $order);
         if (!$updateResult || !$updateResult['success']) {

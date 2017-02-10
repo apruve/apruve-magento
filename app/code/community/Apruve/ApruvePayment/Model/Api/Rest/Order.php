@@ -94,7 +94,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
             $apruveEntity->setMagentoId($order->getIncrementId());
             $apruveEntity->setEntityType('order');
             $apruveEntity->save();
-        } catch(Exception $e) {
+        } catch (Exception $e) {
             Mage::helper('apruvepayment')->logException('Couldn\'t update the order: ' . $e->getMessage());
             Mage::throwException(Mage::helper('apruvepayment')->__('Couldn\'t update order.'));
         }
@@ -104,18 +104,92 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
     /**
      * Update an existing order by its ID in apruve
      *
+     * This also determines if the order is from the frontend or the backend
+     *
      * @param string $apruveOrderId
      * @param Mage_Sales_Model_Order $order
      * @return string $result
      */
     public function updateOrder($apruveOrderId, $order)
     {
+        if (Mage::app()->getStore()->isAdmin()) {
+            return $this->_updateAdminOrder($apruveOrderId, $order);
+        } else {
+            return $this->_updateFrontendOrder($apruveOrderId, $order);
+        }
+    }
+
+    /**
+     * Update an existing admin order by its ID in apruve
+     *
+     * @param string $apruveOrderId
+     * @param Mage_Sales_Model_Order $order
+     * @return string $result
+     */
+    protected function _updateAdminOrder($apruveOrderId, $order)
+    {
+        $result = null;
+        $lineItems = $this->_getLineItems($order);
+
+        // get discount line item
+        if (($discountItem = $this->_getDiscountItem($order))) {
+            $lineItems[] = $discountItem;
+        }
+        $corporateAccount = Mage::getModel('apruvepayment/api_rest_account');
+        $corporateAccount->getCorporateAccount($order->getCustomerEmail());
+        $shopper_id = $corporateAccount->getShopperId($order->getCustomerEmail());
+        $payment_term = $corporateAccount->getPaymentTerm();
+
+        if ($shopper_id) {
+            $data = json_encode(array(
+                'order' => array(
+                    'merchant_id' => $this->getMerchantKey(),
+                    'merchant_order_id' => $order->getIncrementId(),
+                    'shopper_id' => $shopper_id,
+                    'payment_term' => $payment_term,
+                    'amount_cents' => $this->convertPrice($order->getBaseGrandTotal()),
+                    'shipping_cents' => $this->convertPrice($order->getBaseShippingAmount()),
+                    'tax_cents' => $this->convertPrice($order->getBaseTaxAmount()),
+                    'invoice_on_create' => 'false',
+                    'order_items' => $lineItems
+                )
+            ));
+
+            $curlOptions = [];
+            $curlOptions[CURLOPT_POSTFIELDS] = $data;
+
+            if (@$apruveOrderId === null) {
+                $curlAction = 'POST';
+            } else {
+                $curlAction = 'PUT';
+            }
+
+            $result = $this->execCurlRequest($this->_getUpdateOrderUrl($apruveOrderId), $curlAction, $curlOptions);
+            if ($result['success'] == true) {
+                if ($apruveOrderId == null) {
+                    $apruveOrderId = $result['response']['id'];
+                }
+                Mage::helper('apruvepayment')->logException('Order updated successfully...');
+                $this->_updateOrderId($apruveOrderId, $order);
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Update an existing frontend order by its ID in apruve
+     *
+     * @param string $apruveOrderId
+     * @param Mage_Sales_Model_Order $order
+     * @return string $result
+     */
+    protected function _updateFrontendOrder($apruveOrderId, $order)
+    {
         $lineItems = [];
         // get discount line item
         if(($discountItem = $this->_getDiscountItem($order))) {
             $lineItems[] = $discountItem;
         }
-
         $data = json_encode(array(
             'order' => array(
                 'merchant_order_id' => $order->getIncrementId(),
@@ -126,10 +200,8 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
                 'order_items'       => $lineItems
             )
         ));
-
         $curlOptions = [];
         $curlOptions[CURLOPT_POSTFIELDS] = $data;
-
         $result = $this->execCurlRequest($this->_getUpdateOrderUrl($apruveOrderId), 'PUT', $curlOptions);
         if($result['success'] == true) {
             Mage::helper('apruvepayment')->logException('Order updated successfully...');
@@ -149,7 +221,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
     {
         $orderIncrementId = $quote->getReservedOrderId();
         $order = Mage::getModel('sales/order')->loadByIncrementId($orderIncrementId);
-        if(!$order->getId()) {
+        if (!$order->getId()) {
             Mage::throwException(Mage::helper('apruvepayment')->__('Couldn\'t load the order.'));
         }
         return $order;
@@ -165,7 +237,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
     public function finalizeOrder($apruveOrderId, $order)
     {
         $result = $this->execCurlRequest($this->_getFinalizeOrderUrl($apruveOrderId), 'POST');
-        if($result['success'] == true) {
+        if ($result['success'] == true) {
             $this->_updateOrderId($apruveOrderId, $order);
             Mage::helper('apruvepayment')->logException('Order finalized successfully...');
         }
@@ -183,5 +255,30 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
     {
         $result = $this->execCurlRequest($this->_getCancelOrderUrl($apruveOrderId), 'POST');
         return $result;
+    }
+
+    /**
+     * Get Magento line items prepared for Apruve
+     *
+     * @param $lineItems Mage_Sales_Model_Order_Item
+     * @return $items array
+     */
+    protected function _getLineItems($order)
+    {
+        $items = array();
+
+        foreach ($order->getAllVisibleItems() as $item) {
+            $items[] = array(
+                'title' => $item->getName(),
+                'description' => $item->getDescription(),
+                'price_total_cents' => $item->getRowTotal() * 100,
+                'price_ea_cents' => $item->getPrice() * 100,
+                'quantity' => $item->getQtyOrdered(),
+                'sku' => $item->getSku(),
+                'view_product_url' => $item->getProduct()->getUrlInStore()
+            );
+        }
+
+        return $items;
     }
 }
