@@ -143,7 +143,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Shipment extends Apruve_ApruvePayment_
             'currency' => $this->getCurrency(),
             'merchant_notes' => $comment->getComment(),
             'shipment_items' => $items,
-            'status' => 'FULFILLED'
+            'status' => 'fulfilled'
         ]);
 
         return $data;
