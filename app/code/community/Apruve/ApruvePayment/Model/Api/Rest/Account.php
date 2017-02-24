@@ -51,7 +51,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Account extends Apruve_ApruvePayment_M
     public function getCorporateAccount($email)
     {
         $data = json_encode([
-            'email' => $email
+            'email' => urlencode($email)
         ]);
 
         $curlOptions = [];
