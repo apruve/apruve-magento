@@ -158,7 +158,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
             $curlOptions = [];
             $curlOptions[CURLOPT_POSTFIELDS] = $data;
 
-            if (@$apruveOrderId === null) {
+            if ($apruveOrderId === null) {
                 $curlAction = 'POST';
             } else {
                 $curlAction = 'PUT';
