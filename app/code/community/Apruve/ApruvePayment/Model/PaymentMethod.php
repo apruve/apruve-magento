@@ -31,6 +31,8 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
 
     protected $_canAuthorize = true;
     protected $_canCapture = true;
+    protected $_canRefund = true;
+    protected $_canRefundInvoicePartial = true;
     protected $_canVoid = true;
     protected $_canUseInternal = true;
     protected $_canUseCheckout = true;
@@ -110,9 +112,6 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
         /** @var Mage_Sales_Model_Order $order */
         $order = $payment->getOrder();
 
-        /** @var Apruve_ApruvePayment_Helper_Data $apiVersion */
-        $apiVersion = Mage::helper('apruvepayment')->getApiVersion();
-
         /** @var Apruve_ApruvePayment_Model_Api_Rest_Order $orderApi */
         $orderApi = Mage::getModel('apruvepayment/api_rest_order');
 
@@ -121,6 +120,9 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
         if (!$updateResult || !$updateResult['success']) {
             Mage::throwException('Couldn\'t update order in Apruve.');
         }
+
+        $payment->setTransactionId($updateResult['response']['id']);
+        $payment->setIsTransactionClosed(0);
 
         return $this;
     }
@@ -144,6 +146,52 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
         $payment->setSkipTransactionCreation(true);
         return $this;
     }
+
+
+    /**
+     * Create a refund
+     *
+     * @param   Varien_Object $payment
+     * @return  bool
+     * @throws  Mage_Core_Exception
+     */
+     public function refund(Varien_Object $payment, $amount){
+        Mage::helper('apruvepayment')->logException('Refund...');
+
+         // Get Magento Order
+         $order = $payment->getOrder();
+         $apruveEntity = Mage::getModel('apruvepayment/entity')->loadByOrderId($order->getIncrementId(), 'magento_id');
+         $apruveOrderId = $apruveEntity->getApruveId();
+
+         // Get API objects
+         $orderApi = Mage::getModel('apruvepayment/api_rest_order');
+         $invoiceApi = Mage::getModel('apruvepayment/api_rest_invoice');
+
+         // User Order to Get Apruve invoices
+         $invoices = $orderApi->getInvoices($apruveOrderId);
+
+         $validInvoiceIds = [];
+         $totalAmountDue = 0;
+
+         foreach ($invoices as $invoice){
+           if($invoice['amount_due'] > 0) {
+             $validInvoiceIds[] = $invoice['id'];
+             $totalAmountDue += $invoice['amount_due'];
+           }
+         }
+
+          if ($totalAmountDue >= ($amount * 100)  && !empty($validInvoiceIds)){
+              $result = $invoiceApi->refundInvoice($validInvoiceIds[0], $amount);
+          } else {
+              Mage::throwException(Mage::helper('paygate')->__('Invalid data for online refund.'));
+          }
+
+         if ($result['success'] == false) {
+             Mage::throwException(Mage::helper('paygate')->__('Refund Failure Code:' . $result['code'] . ' - ' . $result['messsage']));
+         } else {
+             return $this;
+         }
+     }
 
     /**
      * Check void availability
