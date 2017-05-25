@@ -160,26 +160,38 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
 
 		// Get Magento Order
 		$order = $payment->getOrder();
-		$apruveEntity = Mage::getModel('apruvepayment/entity')->loadByOrderId($order->getIncrementId(), 'magento_id');
+		$magentoOrderId = $order->getIncrementId();
+		$apruveEntity = Mage::getModel('apruvepayment/entity')->loadByOrderId($magentoOrderId, 'magento_id');
 		$apruveOrderId = $apruveEntity->getApruveId();
+
+		$magentoInvoices = [];
+
+		$invoiceCollection = $order->getInvoiceCollection();
+		foreach($invoiceCollection as $invoice):
+			$magentoInvoices[] =  $invoice->getIncrementId();
+		endforeach;
 
 		// Get API objects
 		$orderApi = Mage::getModel('apruvepayment/api_rest_order');
 		$invoiceApi = Mage::getModel('apruvepayment/api_rest_invoice');
 
 		// User Order to Get Apruve invoices
-		$invoices = $orderApi->getInvoices($apruveOrderId);
+		$apruveInvoices = $orderApi->getInvoices($apruveOrderId);
 
-		$validInvoiceIds = [];
+		$validInvoice = null;
 		$totalAmountCents = 0;
 
-		foreach ($invoices as $invoice){
-			$validInvoiceIds[] = $invoice['id'];
+		foreach ($apruveInvoices as $invoice){
 			$totalAmountCents += $invoice['amount_cents'];
+			if (in_array($invoice['merchant_invoice_id'], $magentoInvoices)){
+				$validApruveInvoiceId = $invoice['id'];
+			}
 		}
 
-		if ($totalAmountCents >= ($amount * 100)  && !empty($validInvoiceIds)){
-			$result = $invoiceApi->refundInvoice($validInvoiceIds[0], $amount);
+		Mage::helper('apruvepayment')->logException('$totalAmountCents: ' . $totalAmountCents);
+		Mage::helper('apruvepayment')->logException('$validInvoice: ' . $validInvoice);
+		if ($totalAmountCents >= ($amount * 100)  && !empty($validApruveInvoiceId)){
+			$result = $invoiceApi->refundInvoice($validApruveInvoiceId, $amount);
 		} else {
 			Mage::throwException(Mage::helper('paygate')->__('Invalid data for online refund.'));
 		}
