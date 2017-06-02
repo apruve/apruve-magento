@@ -164,7 +164,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
 		$apruveEntity = Mage::getModel('apruvepayment/entity')->loadByOrderId($magentoOrderId, 'magento_id');
 		$apruveOrderId = $apruveEntity->getApruveId();
 
-		$magentoInvoice = $this->_getInvoiceForTransactionId($payment);
+		$magentoInvoice = $this->_getInvoiceFromPayment($payment);
 
 		// Get API objects
 		$orderApi = Mage::getModel('apruvepayment/api_rest_order');
@@ -236,12 +236,12 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
 	}
 
 	/**
-	 * Return invoice model for transaction
+	 * Return invoice model from a payment
 	 *
-	 * @param string $transactionId
+	 * @param Varien_Object $payment
 	 * @return Mage_Sales_Model_Order_Invoice
 	 */
-	protected function _getInvoiceForTransactionId($payment)
+	protected function _getInvoiceFromPayment($payment)
 	{
 		$transactionId = $payment->getParentTransactionId();
 
