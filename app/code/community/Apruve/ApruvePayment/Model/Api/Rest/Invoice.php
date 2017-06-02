@@ -33,6 +33,9 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
      */
     protected function _getCreateInvoiceUrl($apruveOrderId)
     {
+        if($apruveOrderId === null){
+            Mage::throwException(Mage::helper('apruvepayment')->__('No Apruve Order ID for _getCreateInvoiceUrl'));
+        }
         return $this->getBaseUrl(true) . $this->getApiUrl() . 'orders/' . $apruveOrderId . '/invoices';
     }
 
@@ -243,4 +246,38 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
         $result = $this->execCurlRequest($this->_getCancelInvoiceUrl($apruveInvoiceId), 'POST');
         return $result;
     }
+
+
+    /**
+     * refund an existing invoice by its ID in apruve
+     *
+     * @param $id string
+     * @return $result string
+     */
+    public function refundInvoice($apruveInvoiceId, $amount)
+    {
+
+        $data = json_encode(array(
+            "amount_cents" => ($amount * 100),
+            "currency" => "USD",
+            "reason" => "OTHER"
+        ));
+        $curlOptions = [];
+        $curlOptions[CURLOPT_POSTFIELDS] = $data;
+
+        $result = $this->execCurlRequest($this->_getInvoiceRefundUrl($apruveInvoiceId), 'POST', $curlOptions);
+
+        return $result;
+    }
+
+    /**
+     * Get url for invoice refund
+     * @param string $apruveOrderId
+     * @return string
+     */
+    protected function _getInvoiceRefundUrl($apruveInvoiceId)
+    {
+        return $this->getBaseUrl(true) . $this->getApiUrl() . 'invoices/' . $apruveInvoiceId . '/invoice_returns';
+    }
+
 }
