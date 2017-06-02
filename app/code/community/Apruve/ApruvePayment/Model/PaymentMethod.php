@@ -164,12 +164,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
 		$apruveEntity = Mage::getModel('apruvepayment/entity')->loadByOrderId($magentoOrderId, 'magento_id');
 		$apruveOrderId = $apruveEntity->getApruveId();
 
-		$magentoInvoices = [];
-
-		$invoiceCollection = $order->getInvoiceCollection();
-		foreach($invoiceCollection as $invoice):
-			$magentoInvoices[] =  $invoice->getIncrementId();
-		endforeach;
+		$magentoInvoice = $invoice = $this->_getInvoiceForTransactionId($payment);
 
 		// Get API objects
 		$orderApi = Mage::getModel('apruvepayment/api_rest_order');
@@ -183,7 +178,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
 
 		foreach ($apruveInvoices as $invoice){
 			$totalAmountCents += $invoice['amount_cents'];
-			if (in_array($invoice['merchant_invoice_id'], $magentoInvoices)){
+			if ($invoice['merchant_invoice_id']== $magentoInvoice->getIncrementId()){
 				$validApruveInvoiceId = $invoice['id'];
 			}
 		}
@@ -237,6 +232,33 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
 			return $this->void($payment);
 		}
 
+		return false;
+	}
+
+	/**
+	 * Return invoice model for transaction
+	 *
+	 * @param string $transactionId
+	 * @return Mage_Sales_Model_Order_Invoice
+	 */
+	protected function _getInvoiceForTransactionId($payment)
+	{
+		$transactionId = $payment->getParentTransactionId();
+
+		foreach ($payment->getOrder()->getInvoiceCollection() as $invoice) {
+			if ($invoice->getTransactionId() == $transactionId) {
+				$invoice->load($invoice->getId()); // to make sure all data will properly load (maybe not required)
+				return $invoice;
+			}
+		}
+		foreach ($payment->getOrder()->getInvoiceCollection() as $invoice) {
+			if ($invoice->getState() == Mage_Sales_Model_Order_Invoice::STATE_OPEN
+			    && $invoice->load($invoice->getId())
+			) {
+				$invoice->setTransactionId($transactionId);
+				return $invoice;
+			}
+		}
 		return false;
 	}
 }
