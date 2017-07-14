@@ -33,7 +33,7 @@ ApruvePayment.prototype = {
     _prepareApruve: function () {
         $('p_method_apruvepayment').observe(
             'click', function () {
-            apruve.startCheckout();
+                apruve.startCheckout();
             }
         );
 
@@ -43,20 +43,20 @@ ApruvePayment.prototype = {
         var self = this;
         apruve.registerApruveCallback(
             apruve.APRUVE_COMPLETE_EVENT, function () {
-            self._resetApruveRadio();
-            if (self.autoSubmit == true) {
-                if (typeof payment !== "undefined" && typeof payment.save === "function") {
-                    payment.save();
-                } else if (typeof payment !== "undefined" && typeof payment.formId !== "undefined") {
-                    $(payment.formId).submit();
+                self._resetApruveRadio();
+                if (self.autoSubmit == true) {
+                    if (typeof payment !== "undefined" && typeof payment.save === "function") {
+                        payment.save();
+                    } else if (typeof payment !== "undefined" && typeof payment.formId !== "undefined") {
+                        $(payment.formId).submit();
+                    }
                 }
-            }
             }
         );
 
         apruve.registerApruveCallback(
             apruve.APRUVE_CLOSED_EVENT, function () {
-            self._resetApruveRadio();
+                self._resetApruveRadio();
             }
         );
     },

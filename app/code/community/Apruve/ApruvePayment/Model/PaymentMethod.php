@@ -47,7 +47,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
      *
      * @return bool
      */
-    public function canEdit() 
+    public function canEdit()
     {
         return false;
     }
@@ -59,7 +59,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
      *
      * @return  Mage_Payment_Model_Info
      */
-    public function assignData( $data ) 
+    public function assignData($data)
     {
         if (is_array($data)) {
             $this->getInfoInstance()->setAdditionalInformation('aprt', isset($data['aprt']) ? $data['aprt'] : null);
@@ -76,7 +76,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
      * @return Mage_Payment_Model_Abstract|void
      * @throws Mage_Core_Exception
      */
-    public function validate() 
+    public function validate()
     {
         parent::validate();
 
@@ -107,7 +107,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
      * @return Mage_Payment_Model_Abstract|void
      * @throws Mage_Core_Exception
      */
-    public function authorize( Varien_Object $payment, $amount ) 
+    public function authorize(Varien_Object $payment, $amount)
     {
         parent::authorize($payment, $amount);
         Mage::helper('apruvepayment')->logException('Authorize...');
@@ -141,7 +141,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
      * @return  bool
      * @throws  Mage_Core_Exception
      */
-    public function capture( Varien_Object $payment, $amount ) 
+    public function capture(Varien_Object $payment, $amount)
     {
         parent::capture($payment, $amount);
         Mage::helper('apruvepayment')->logException('Capture...');
@@ -164,7 +164,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
      * @return  bool
      * @throws  Mage_Core_Exception
      */
-    public function refund( Varien_Object $payment, $amount ) 
+    public function refund(Varien_Object $payment, $amount)
     {
         Mage::helper('apruvepayment')->logException('Refund...');
 
@@ -193,16 +193,16 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
             }
         }
 
-        Mage::helper('apruvepayment')->logException('$totalAmountCents: ' . $totalAmountCents);
-        Mage::helper('apruvepayment')->logException('$validInvoice: ' . $validInvoice);
-        if ($totalAmountCents >= ( $amount * 100 ) && ! empty($validApruveInvoiceId)) {
+        Mage::helper('apruvepayment')->logException('$totalAmountCents: '.$totalAmountCents);
+        Mage::helper('apruvepayment')->logException('$validInvoice: '.$validInvoice);
+        if ($totalAmountCents >= ($amount * 100) && ! empty($validApruveInvoiceId)) {
             $result = $invoiceApi->refundInvoice($validApruveInvoiceId, $amount);
         } else {
             Mage::throwException(Mage::helper('paygate')->__('Invalid data for online refund.'));
         }
 
         if ($result['success'] == false) {
-            Mage::throwException(Mage::helper('paygate')->__('Refund Failure Code:' . $result['code'] . ' - ' . $result['messsage']));
+            Mage::throwException(Mage::helper('paygate')->__('Refund Failure Code:'.$result['code'].' - '.$result['messsage']));
         } else {
             return $this;
         }
@@ -215,7 +215,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
      *
      * @return Mage_Sales_Model_Order_Invoice
      */
-    protected function _getInvoiceFromPayment( $payment ) 
+    protected function _getInvoiceFromPayment($payment)
     {
         $transactionId = $payment->getParentTransactionId();
 
@@ -229,7 +229,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
 
         foreach ($payment->getOrder()->getInvoiceCollection() as $invoice) {
             if ($invoice->getState() == Mage_Sales_Model_Order_Invoice::STATE_OPEN
-                 && $invoice->load($invoice->getId())
+                && $invoice->load($invoice->getId())
             ) {
                 $invoice->setTransactionId($transactionId);
 
@@ -247,10 +247,10 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
      *
      * @return  bool
      */
-    public function canVoid( Varien_Object $payment ) 
+    public function canVoid(Varien_Object $payment)
     {
         if ($payment instanceof Mage_Sales_Model_Order_Invoice
-             || $payment instanceof Mage_Sales_Model_Order_Creditmemo
+            || $payment instanceof Mage_Sales_Model_Order_Creditmemo
         ) {
             return false;
         }
@@ -269,7 +269,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
      *
      * @return Apruve_ApruvePayment_Model_PaymentMethod | false
      */
-    public function cancel( Varien_Object $payment ) 
+    public function cancel(Varien_Object $payment)
     {
         Mage::helper('apruvepayment')->logException('Cancel...');
 

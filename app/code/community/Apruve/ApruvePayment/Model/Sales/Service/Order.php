@@ -35,7 +35,7 @@ class Apruve_ApruvePayment_Model_Sales_Service_Order extends Mage_Sales_Model_Se
      *
      * @return Mage_Sales_Model_Order_Invoice
      */
-    public function prepareInvoice( $qtys = array() ) 
+    public function prepareInvoice($qtys = array())
     {
         if (version_compare(Mage::getVersion(), '1.9.2.0', '<')) {
             $invoice  = $this->_convertor->toInvoice($this->_order);
@@ -50,8 +50,8 @@ class Apruve_ApruvePayment_Model_Sales_Service_Order extends Mage_Sales_Model_Se
                 if ($orderItem->isDummy()) {
                     $qty = $orderItem->getQtyOrdered() ? $orderItem->getQtyOrdered() : 1;
                 } else if (! empty($qtys)) {
-                    if (isset($qtys[ $orderItem->getId() ])) {
-                        $qty = (float) $qtys[ $orderItem->getId() ];
+                    if (isset($qtys[$orderItem->getId()])) {
+                        $qty = (float)$qtys[$orderItem->getId()];
                     }
                 } else {
                     $qty = $orderItem->getQtyToInvoice();

@@ -27,7 +27,7 @@
 class Apruve_ApruvePayment_Block_Adminhtml_Sales_Order_View extends Mage_Adminhtml_Block_Sales_Order_View
 {
 
-    protected function _isAllowedAction( $action ) 
+    protected function _isAllowedAction($action)
     {
         if ($action == 'invoice') {
             $order = $this->getOrder();

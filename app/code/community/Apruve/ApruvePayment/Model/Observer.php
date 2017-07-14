@@ -32,9 +32,9 @@ class Apruve_ApruvePayment_Model_Observer
      *
      * @return void
      */
-    public function finalizeOrder( $observer ) 
+    public function finalizeOrder($observer)
     {
-        list( $order, $payment ) = $this->_getOrderInfo($observer);
+        list($order, $payment) = $this->_getOrderInfo($observer);
 
         if ($payment->getMethod() == Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE) {
             try {
@@ -54,7 +54,7 @@ class Apruve_ApruvePayment_Model_Observer
                         Mage::throwException($result['message']);
                     }
                 }
-            } catch (Exception $e) {
+            } catch(Exception $e) {
                 Mage::throwException($e->getMessage());
             }
         }
@@ -68,7 +68,7 @@ class Apruve_ApruvePayment_Model_Observer
      *
      * @return []
      */
-    protected function _getOrderInfo( $observer ) 
+    protected function _getOrderInfo($observer)
     {
         $order   = null;
         $payment = null;
@@ -81,7 +81,7 @@ class Apruve_ApruvePayment_Model_Observer
             }
         }
 
-        return array( $order, $payment );
+        return array($order, $payment);
     }
 
     /**
@@ -91,15 +91,18 @@ class Apruve_ApruvePayment_Model_Observer
      *
      * @return void
      */
-    public function cancelOrder( $observer ) 
+    public function cancelOrder($observer)
     {
         /**
          * @var Mage_Sales_Model_Order $order
          */
-        list( $order, $payment ) = $this->_getOrderInfo($observer);
+        list($order, $payment) = $this->_getOrderInfo($observer);
 
         if ($order->getId() && $payment->getMethod() == Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE) {
-            $apruveEntity  = Mage::getModel('apruvepayment/entity')->loadByOrderId($order->getIncrementId(), 'magento_id');
+            $apruveEntity  = Mage::getModel('apruvepayment/entity')->loadByOrderId(
+                $order->getIncrementId(),
+                'magento_id'
+            );
             $apruveOrderId = $apruveEntity->getApruveId();
 
             /**
@@ -117,7 +120,7 @@ class Apruve_ApruvePayment_Model_Observer
      *
      * @return void
      */
-    public function createInvoice( $observer ) 
+    public function createInvoice($observer)
     {
         $invoice = $observer->getEvent()->getInvoice();
 
@@ -128,7 +131,7 @@ class Apruve_ApruvePayment_Model_Observer
         $payment = $order->getPayment();
 
         if ($order->getId() && $invoice->getIncrementId()
-             && $payment->getMethod() == Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE
+            && $payment->getMethod() == Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE
         ) {
             /**
              * @var Apruve_ApruvePayment_Model_Api_Rest_Invoice $invoiceApi
@@ -156,7 +159,7 @@ class Apruve_ApruvePayment_Model_Observer
      *
      * @return void
      */
-    public function createShipment( $observer ) 
+    public function createShipment($observer)
     {
         $shipment = $observer->getEvent()->getShipment();
 
@@ -166,16 +169,22 @@ class Apruve_ApruvePayment_Model_Observer
         $order   = $shipment->getOrder();
         $payment = $order->getPayment();
         if ($order->getId() && $shipment->getIncrementId()
-             && $payment->getMethod() == Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE
+            && $payment->getMethod() == Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE
         ) {
             $invoice = $this->_createInvoiceFromShipment($shipment);
             /**
              * @var Apruve_ApruvePayment_Model_Api_Rest_Shipment $shipmentApi
              */
             $shipmentApi      = Mage::getModel('apruvepayment/api_rest_shipment');
-            $apruveEntity     = Mage::getModel('apruvepayment/entity')->loadByInvoiceId($invoice->getIncrementId(), 'magento_id');
+            $apruveEntity     = Mage::getModel('apruvepayment/entity')->loadByInvoiceId(
+                $invoice->getIncrementId(),
+                'magento_id'
+            );
             $apruveInvoiceId  = $apruveEntity->getApruveId();
-            $apruveEntity     = Mage::getModel('apruvepayment/entity')->loadByShipmentId($shipment->getIncrementId(), 'magento_id');
+            $apruveEntity     = Mage::getModel('apruvepayment/entity')->loadByShipmentId(
+                $shipment->getIncrementId(),
+                'magento_id'
+            );
             $apruveShipmentId = $apruveEntity->getApruveId();
             if ($apruveShipmentId) {
                 $result = $shipmentApi->updateShipment($apruveInvoiceId, $apruveShipmentId, $shipment, $invoice);
@@ -192,7 +201,7 @@ class Apruve_ApruvePayment_Model_Observer
      *
      * @return Mage_Sales_Model_Order_Invoice
      */
-    protected function _createInvoiceFromShipment( $shipment ) 
+    protected function _createInvoiceFromShipment($shipment)
     {
         $order   = $shipment->getOrder();
         $invoice = Mage::getModel('sales/order_invoice');
@@ -214,7 +223,7 @@ class Apruve_ApruvePayment_Model_Observer
                                    ->addObject($invoice->getOrder());
 
             $transactionSave->save();
-        } catch (Mage_Core_Exception $e) {
+        } catch(Mage_Core_Exception $e) {
             Mage::helper('apruvepayment')->logException($e->getMessage());
             throw new Exception($e->getMessage(), 1);
         }
@@ -229,12 +238,12 @@ class Apruve_ApruvePayment_Model_Observer
      *
      * @return []
      */
-    protected function _getShippedItemQty( $shipment ) 
+    protected function _getShippedItemQty($shipment)
     {
         $qtys = array();
         foreach ($shipment->getAllItems() as $item) {
-            $orderItem                   = $item->getOrderItem();
-            $qtys[ $orderItem->getId() ] = $item->getQty();
+            $orderItem                 = $item->getOrderItem();
+            $qtys[$orderItem->getId()] = $item->getQty();
         }
 
         return $qtys;
@@ -247,13 +256,13 @@ class Apruve_ApruvePayment_Model_Observer
      *
      * @return Mage_Sales_Model_Order_Invoice
      */
-    protected function _getInvoiceFromShipment( $shipment ) 
+    protected function _getInvoiceFromShipment($shipment)
     {
         $order = $shipment->getOrder();
 
         $shipmentDetails = array();
         foreach ($shipment->getAllItems() as $item) {
-            $shipmentDetails[ $item->getSku() ] = $item->getQty();
+            $shipmentDetails[$item->getSku()] = $item->getQty();
         }
 
         $hasInvoices = $order->hasInvoices();
@@ -269,7 +278,7 @@ class Apruve_ApruvePayment_Model_Observer
                 $items         = $invoice->getAllItems();
                 $apruveInvoice = $invoice;
                 foreach ($items as $item) {
-                    if ($item->getQty() != $shipmentDetails[ $item->getSku() ]) {
+                    if ($item->getQty() != $shipmentDetails[$item->getSku()]) {
                         $apruveInvoice = '';
                         break;
                     }

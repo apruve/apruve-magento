@@ -38,13 +38,13 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      *
      * @return string
      */
-    public function getBaseUrl( $secure = true ) 
+    public function getBaseUrl($secure = true)
     {
         $http = $secure ? 'https://' : 'http://';
         if ($this->getIsTestMode()) {
-            return $http . 'test.apruve.com/';
+            return $http.'test.apruve.com/';
         } else {
-            return $http . 'app.apruve.com/';
+            return $http.'app.apruve.com/';
         }
     }
 
@@ -52,7 +52,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      * Check whether payment works in test mode
      * @return bool
      */
-    protected function getIsTestMode() 
+    protected function getIsTestMode()
     {
         return Mage::getStoreConfig('payment/apruvepayment/mode');
     }
@@ -62,7 +62,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      *
      * @return float[]
      */
-    public function getAmountsFromQuote( $quote ) 
+    public function getAmountsFromQuote($quote)
     {
         $result['amount_cents']   = $quote->getGrandTotal();
         $result['tax_cents']      = 0;
@@ -81,7 +81,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      *
      * @return float[]
      */
-    public function getAmountsFromOrder( $order ) 
+    public function getAmountsFromOrder($order)
     {
         $result['amount_cents']   = $order->getGrandTotal();
         $result['tax_cents']      = $order->getTaxAmount();
@@ -94,11 +94,11 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      * Generate headers for rest request
      * @return array
      */
-    protected function getHeaders() 
+    protected function getHeaders()
     {
         return array(
             "accept: application/json",
-            "apruve-api-key: " . $this->getApiKey(),
+            "apruve-api-key: ".$this->getApiKey(),
             "content-type: application/json"
         );
     }
@@ -107,7 +107,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      * Get Api key from module configuration
      * @return string|null
      */
-    protected function getApiKey() 
+    protected function getApiKey()
     {
         $api = Mage::getStoreConfig('payment/apruvepayment/api');
 
@@ -119,16 +119,16 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      * Get api url part based on version
      * @return string
      */
-    protected function getApiUrl() 
+    protected function getApiUrl()
     {
-        return 'api/' . $this->getApiVersion() . '/';
+        return 'api/'.$this->getApiVersion().'/';
     }
 
     /**
      * Get the API version selected for the store
      * @return string
      */
-    protected function getApiVersion() 
+    protected function getApiVersion()
     {
         return Mage::helper('apruvepayment')->getApiVersion();
     }
@@ -139,24 +139,24 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      * @var string|JSON $response
      * @var string $url
      * @var string $err
-     * @var string|integer $http_status
+     * @var string|integer $httpStatus
      * @var string|[] $curlOptions
      * @return string[] $result
      */
-    protected function _prepareResponse( $response, $url = '', $err = '', $http_status = '', $curlOptions = '' ) 
+    protected function _prepareResponse($response, $url = '', $err = '', $httpStatus = '', $curlOptions = '')
     {
         $result  = array();
         $success = true;
         $message = '';
         if ($err) {
-            $message = "Request Error:" . $err;
+            $message = "Request Error:".$err;
             $success = false;
         }
 
-        if ($http_status < 200 || $http_status >= 300) {
-            $response_decoded = json_decode($response);
-            if (isset($response_decoded->error)) {
-                $message = $response_decoded->error;
+        if ($httpStatus < 200 || $httpStatus >= 300) {
+            $responseDecoded = json_decode($response);
+            if (isset($responseDecoded->error)) {
+                $message = $responseDecoded->error;
             } else {
                 $message = "Request Error: Request could not be processed";
             }
@@ -165,7 +165,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
         }
 
         $result['success']   = $success;
-        $result['code']      = $http_status;
+        $result['code']      = $httpStatus;
         $result['messsage']  = $message;
         $result['response']  = Mage::helper('core')->jsonDecode($response);
         $result['post_data'] = $curlOptions;
@@ -180,7 +180,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      *
      * @return date
      */
-    protected function getExpiryDate() 
+    protected function getExpiryDate()
     {
         return $this->getDateFormatted('+1 week');
     }
@@ -190,7 +190,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      *
      * @return date
      */
-    protected function getDateFormatted( $date ) 
+    protected function getDateFormatted($date)
     {
         return date(self::DATE_FORMAT, strtotime($date));
     }
@@ -200,7 +200,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      *
      * @return string
      */
-    protected function getVendor( $orderItem ) 
+    protected function getVendor($orderItem)
     {
         $product       = $orderItem->getProduct();
         $attributeCode = Mage::getStoreConfig('payment/apruvepayment/product_vendor');
@@ -213,7 +213,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      * Get Merchant key from module configuration
      * @return string|null
      */
-    protected function getMerchantKey() 
+    protected function getMerchantKey()
     {
         $id = Mage::getStoreConfig('payment/apruvepayment/merchant');
 
@@ -227,7 +227,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      *
      * @return array
      */
-    protected function _getDiscountItem( $object ) 
+    protected function _getDiscountItem($object)
     {
         $helper                      = Mage::helper('apruvepayment');
         $discountItem                = array();
@@ -248,7 +248,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
         }
 
         if ($discountAmount) {
-            $discountAmount                    = - 1 * abs($discountAmount);
+            $discountAmount                    = -1 * abs($discountAmount);
             $discountItem['price_ea_cents']    = $discountAmount;
             $discountItem['price_total_cents'] = $discountAmount;
 
@@ -263,7 +263,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      *
      * @return date
      */
-    protected function getCurrency() 
+    protected function getCurrency()
     {
         return Mage::app()->getStore()->getBaseCurrencyCode();
     }
@@ -276,7 +276,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      *
      * @return float
      */
-    protected function convertPrice( $price ) 
+    protected function convertPrice($price)
     {
         return $price * 100;
     }
@@ -284,7 +284,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
     /**
      * @return Apruve_ApruvePayment_Helper_Data
      */
-    protected function getHelper() 
+    protected function getHelper()
     {
         return Mage::helper('apruvepayment');
     }
@@ -296,7 +296,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      *
      * @return string
      */
-    protected function getShortDescription( $item ) 
+    protected function getShortDescription($item)
     {
         $shortDescription = $item->getProduct()->getShortDescription();
 
@@ -315,7 +315,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      *
      * @return string
      */
-    protected function getVariantInfo( $item ) 
+    protected function getVariantInfo($item)
     {
         $result      = '';
         $variantInfo = array();
@@ -347,11 +347,11 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      *
      * @return array
      */
-    protected function getProductCustomOptions( $options ) 
+    protected function getProductCustomOptions($options)
     {
         $arr = array();
         foreach ($options as $option) {
-            $arr[] = $option['label'] . ': ' . $option['value'];
+            $arr[] = $option['label'].': '.$option['value'];
         }
 
         return $arr;
@@ -363,18 +363,16 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      * @param array $arr
      *
      * @return string
-     */
-    //todo: new line symbol
-    /**
+     *
      * @param array $attributesInfo
      *
      * @return array
      */
-    protected function getConfigurableOptions( $attributesInfo ) 
+    protected function getConfigurableOptions($attributesInfo)
     {
         $arr = array();
         foreach ($attributesInfo as $option) {
-            $arr[] = $option['label'] . ': ' . $option['value'];
+            $arr[] = $option['label'].': '.$option['value'];
         }
 
         return $arr;
@@ -385,18 +383,18 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
      *
      * @return array
      */
-    protected function getBundleOptions( $bundleOptions ) 
+    protected function getBundleOptions($bundleOptions)
     {
         $arr = array();
         foreach ($bundleOptions as $option) {
-            $arr[] = $option['label'] . ': ' . $option['value'][0]['title'];
+            $arr[] = $option['label'].': '.$option['value'][0]['title'];
         }
 
         return $arr;
     }
 
 
-    protected function getFormatedVariantInfo( $arr ) 
+    protected function getFormatedVariantInfo($arr)
     {
         if (count($arr) == 1) {
             $result = $arr[0];

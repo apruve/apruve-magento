@@ -33,7 +33,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Shipment extends Apruve_ApruvePayment_
      *
      * @return $result string
      */
-    public function getShipment( $apruveInvoiceId, $apruveShipmentId ) 
+    public function getShipment($apruveInvoiceId, $apruveShipmentId)
     {
         $result = $this->execCurlRequest($this->_getShipmentUrl($apruveInvoiceId, $apruveShipmentId));
 
@@ -48,9 +48,10 @@ class Apruve_ApruvePayment_Model_Api_Rest_Shipment extends Apruve_ApruvePayment_
      *
      * @return string
      */
-    protected function _getShipmentUrl( $apruveInvoiceId, $apruveShipmentId ) 
+    protected function _getShipmentUrl($apruveInvoiceId, $apruveShipmentId)
     {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'invoices/' . $apruveInvoiceId . '/shipments/' . $apruveShipmentId;
+        return $this->getBaseUrl(true)
+               .$this->getApiUrl().'invoices/'.$apruveInvoiceId.'/shipments/'.$apruveShipmentId;
     }
 
     /**
@@ -62,14 +63,17 @@ class Apruve_ApruvePayment_Model_Api_Rest_Shipment extends Apruve_ApruvePayment_
      *
      * @return $result string[]
      */
-    public function createShipment( $apruveInvoiceId, $shipment, $invoice ) 
+    public function createShipment($apruveInvoiceId, $shipment, $invoice)
     {
         $data = $this->_getShipmentData($shipment, $invoice);
 
-        $curlOptions                       = array();
-        $curlOptions[ CURLOPT_POSTFIELDS ] = $data;
+        $curlOptions                     = array();
+        $curlOptions[CURLOPT_POSTFIELDS] = $data;
 
-        $result           = $this->execCurlRequest($this->_getCreateShipmentUrl($apruveInvoiceId), 'POST', $curlOptions);
+        $result           = $this->execCurlRequest(
+            $this->_getCreateShipmentUrl($apruveInvoiceId), 'POST',
+            $curlOptions
+        );
         $apruveShipmentId = isset($result['response']['id']) ? $result['response']['id'] : '';
         if ($result['success'] == true) {
             $this->_updateShipmentId($apruveShipmentId, $shipment);
@@ -91,7 +95,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Shipment extends Apruve_ApruvePayment_
      *
      * @return $data []
      */
-    protected function _getShipmentData( $shipment, $invoice ) 
+    protected function _getShipmentData($shipment, $invoice)
     {
         $items = array();
 
@@ -114,18 +118,18 @@ class Apruve_ApruvePayment_Model_Api_Rest_Shipment extends Apruve_ApruvePayment_
         /* prepare invoice data */
         $data = json_encode(
             array(
-            'amount_cents'    => $this->convertPrice($invoice->getBaseGrandTotal()),
-            'tax_cents'       => $this->convertPrice($invoice->getTaxAmount()),
-            'shipping_cents'  => $this->convertPrice($invoice->getShippingAmount()),
-            'shipper'         => $trackingInfo->getTitle(),
-            'tracking_number' => $trackingInfo->getTrackNumber(),
-            'shipped_at'      => $this->getDateFormatted($trackingInfo->getCreatedAt()),
-            'delivered_at'    => '',
-            'currency'        => $this->getCurrency(),
-            'merchant_notes'  => $comment->getComment(),
-            'shipment_items'  => $items,
-            'status'          => 'fulfilled'
-            ) 
+                'amount_cents'    => $this->convertPrice($invoice->getBaseGrandTotal()),
+                'tax_cents'       => $this->convertPrice($invoice->getTaxAmount()),
+                'shipping_cents'  => $this->convertPrice($invoice->getShippingAmount()),
+                'shipper'         => $trackingInfo->getTitle(),
+                'tracking_number' => $trackingInfo->getTrackNumber(),
+                'shipped_at'      => $this->getDateFormatted($trackingInfo->getCreatedAt()),
+                'delivered_at'    => '',
+                'currency'        => $this->getCurrency(),
+                'merchant_notes'  => $comment->getComment(),
+                'shipment_items'  => $items,
+                'status'          => 'fulfilled'
+            )
         );
 
         return $data;
@@ -138,7 +142,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Shipment extends Apruve_ApruvePayment_
      *
      * @return $comment Mage_Sales_Model_Order_Shipment_Comment
      */
-    protected function _getShipmentComment( $shipment ) 
+    protected function _getShipmentComment($shipment)
     {
         $comment = Mage::getResourceModel('sales/order_shipment_comment_collection')
                        ->setShipmentFilter($shipment->getId())
@@ -156,7 +160,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Shipment extends Apruve_ApruvePayment_
      *
      * @return $comment Mage_Sales_Model_Order_Shipment_Track
      */
-    protected function _getShipmentTrack( $shipment ) 
+    protected function _getShipmentTrack($shipment)
     {
         $track = Mage::getResourceModel('sales/order_shipment_track_collection')
                      ->setShipmentFilter($shipment->getId())
@@ -174,9 +178,9 @@ class Apruve_ApruvePayment_Model_Api_Rest_Shipment extends Apruve_ApruvePayment_
      *
      * @return string
      */
-    protected function _getCreateShipmentUrl( $apruveInvoiceId ) 
+    protected function _getCreateShipmentUrl($apruveInvoiceId)
     {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'invoices/' . $apruveInvoiceId . '/shipments';
+        return $this->getBaseUrl(true).$this->getApiUrl().'invoices/'.$apruveInvoiceId.'/shipments';
     }
 
     /**
@@ -188,15 +192,18 @@ class Apruve_ApruvePayment_Model_Api_Rest_Shipment extends Apruve_ApruvePayment_
      * @return bool
      * @throws Exception
      */
-    protected function _updateShipmentId( $apruveShipmentId, $shipment ) 
+    protected function _updateShipmentId($apruveShipmentId, $shipment)
     {
         try {
-            $apruveEntity = Mage::getModel('apruvepayment/entity')->loadByShipmentId($shipment->getIncrementId(), 'magento_id');
+            $apruveEntity = Mage::getModel('apruvepayment/entity')->loadByShipmentId(
+                $shipment->getIncrementId(),
+                'magento_id'
+            );
             $apruveEntity->setApruveId($apruveShipmentId);
             $apruveEntity->setMagentoId($shipment->getIncrementId());
             $apruveEntity->setEntityType('shipping');
             $apruveEntity->save();
-        } catch (Exception $e) {
+        } catch(Exception $e) {
             Mage::helper('apruvepayment')->logException($e->getMessage());
             Mage::throwException(Mage::helper('apruvepayment')->__('Couldn\'t update shipment.'));
         }
@@ -211,14 +218,17 @@ class Apruve_ApruvePayment_Model_Api_Rest_Shipment extends Apruve_ApruvePayment_
      *
      * @return $result string
      */
-    public function updateShipment( $apruveInvoiceId, $apruveShipmentId, $shipment, $invoice ) 
+    public function updateShipment($apruveInvoiceId, $apruveShipmentId, $shipment, $invoice)
     {
         $data = $this->_getShipmentData($shipment, $invoice);
 
-        $curlOptions                       = array();
-        $curlOptions[ CURLOPT_POSTFIELDS ] = $data;
+        $curlOptions                     = array();
+        $curlOptions[CURLOPT_POSTFIELDS] = $data;
 
-        $result = $this->execCurlRequest($this->_getUpdateShipmentUrl($apruveInvoiceId, $apruveShipmentId), 'PUT', $curlOptions);
+        $result = $this->execCurlRequest(
+            $this->_getUpdateShipmentUrl($apruveInvoiceId, $apruveShipmentId), 'PUT',
+            $curlOptions
+        );
 
         return $result;
     }
@@ -231,8 +241,8 @@ class Apruve_ApruvePayment_Model_Api_Rest_Shipment extends Apruve_ApruvePayment_
      *
      * @return string
      */
-    protected function _getUpdateShipmentUrl( $apruveInvoiceId, $apruveShipmentId ) 
+    protected function _getUpdateShipmentUrl($apruveInvoiceId, $apruveShipmentId)
     {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'invoices/' . $apruveInvoiceId . '/shipments/' . $apruveShipmentId;
+        return $this->getBaseUrl(true).$this->getApiUrl().'invoices/'.$apruveInvoiceId.'/shipments/'.$apruveShipmentId;
     }
 }

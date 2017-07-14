@@ -31,9 +31,12 @@ class Apruve_ApruvePayment_Model_Entity extends Mage_Core_Model_Abstract
      *
      * @return Apruve_ApruvePayment_Model_Entity
      */
-    public function loadByOrderId( $id ) 
+    public function loadByOrderId($id)
     {
-        $itemsData = $this->getCollection()->addFieldToFilter('magento_id', $id)->addFieldToFilter('entity_type', 'order')->setPageSize(1)->getData();
+        $itemsData = $this->getCollection()->addFieldToFilter('magento_id', $id)->addFieldToFilter(
+            'entity_type',
+            'order'
+        )->setPageSize(1)->getData();
         if (isset($itemsData[0])) {
             $this->setData($itemsData[0]);
         }
@@ -48,9 +51,12 @@ class Apruve_ApruvePayment_Model_Entity extends Mage_Core_Model_Abstract
      *
      * @return Apruve_ApruvePayment_Model_Entity
      */
-    public function loadByInvoiceId( $id ) 
+    public function loadByInvoiceId($id)
     {
-        $itemsData = $this->getCollection()->addFieldToFilter('magento_id', $id)->addFieldToFilter('entity_type', 'invoice')->setPageSize(1)->getData();
+        $itemsData = $this->getCollection()->addFieldToFilter('magento_id', $id)->addFieldToFilter(
+            'entity_type',
+            'invoice'
+        )->setPageSize(1)->getData();
         if (isset($itemsData[0])) {
             $this->setData($itemsData[0]);
         }
@@ -65,9 +71,12 @@ class Apruve_ApruvePayment_Model_Entity extends Mage_Core_Model_Abstract
      *
      * @return Apruve_ApruvePayment_Model_Entity
      */
-    public function loadByShipmentId( $id ) 
+    public function loadByShipmentId($id)
     {
-        $itemsData = $this->getCollection()->addFieldToFilter('magento_id', $id)->addFieldToFilter('entity_type', 'shipment')->setPageSize(1)->getData();
+        $itemsData = $this->getCollection()->addFieldToFilter('magento_id', $id)->addFieldToFilter(
+            'entity_type',
+            'shipment'
+        )->setPageSize(1)->getData();
         if (isset($itemsData[0])) {
             $this->setData($itemsData[0]);
         }
@@ -80,14 +89,14 @@ class Apruve_ApruvePayment_Model_Entity extends Mage_Core_Model_Abstract
      *
      * @return []|bool
      */
-    public function getItemIds() 
+    public function getItemIds()
     {
         if ($this->getId()) {
             $items = Mage::helper('core')->jsonDecode($this->getApruveItemId());
 
             $itemIds = array();
             foreach ($items as $item) {
-                $itemIds[] = array( 'id' => $item['id'] );
+                $itemIds[] = array('id' => $item['id']);
             }
 
             return $itemIds;
@@ -96,7 +105,7 @@ class Apruve_ApruvePayment_Model_Entity extends Mage_Core_Model_Abstract
         return false;
     }
 
-    protected function _construct() 
+    protected function _construct()
     {
         $this->_init('apruvepayment/entity');
     }

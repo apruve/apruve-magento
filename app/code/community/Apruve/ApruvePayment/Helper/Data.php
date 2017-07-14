@@ -23,34 +23,34 @@ class Apruve_ApruvePayment_Helper_Data extends Mage_Core_Helper_Abstract
     /**
      * @return Apruve_ApruvePayment_Model_Api_Payment
      */
-    public function getPaymentApiModel() 
+    public function getPaymentApiModel()
     {
         return Mage::getModel('apruvepayment/api_payment');
     }
 
-    public function getMode() 
+    public function getMode()
     {
         $sourceModel = Mage::getModel('apruvepayment/mode');
         $sourceArray = $sourceModel->toArray();
 
-        return $sourceArray[ Mage::getStoreConfig('payment/apruvepayment/mode') ];
+        return $sourceArray[Mage::getStoreConfig('payment/apruvepayment/mode')];
     }
 
-    public function getApiVersion() 
+    public function getApiVersion()
     {
         return Mage::getStoreConfig('payment/apruvepayment/version');
     }
 
-    public function isAutoSubmit() 
+    public function isAutoSubmit()
     {
         return Mage::getStoreConfig('payment/apruvepayment/autosubmit');
     }
 
-    public function getSrc() 
+    public function getSrc()
     {
         $apruveUrl = Mage::getModel('apruvepayment/api_payment')->getBaseUrl();
 
-        return $apruveUrl . 'js/apruve.js?display=compact';
+        return $apruveUrl.'js/apruve.js?display=compact';
     }
 
     /**
@@ -59,7 +59,7 @@ class Apruve_ApruvePayment_Helper_Data extends Mage_Core_Helper_Abstract
      * @var string|array|object $data
      * @return void
      */
-    public function logException( $data ) 
+    public function logException($data)
     {
         $isEnabled = Mage::getStoreConfig('payment/apruvepayment/log');
         if ($isEnabled) {
@@ -74,14 +74,14 @@ class Apruve_ApruvePayment_Helper_Data extends Mage_Core_Helper_Abstract
      *
      * @return Mage_Core_Model_Abstract[]
      */
-    public function getAllVisibleItems( $object ) 
+    public function getAllVisibleItems($object)
     {
         $items = array();
         foreach ($object->getItemsCollection() as $item) {
             $orderItem = $item->getOrderItem();
             if (! $orderItem->isDeleted() && ! $orderItem->getParentItemId()) {
-                $qty = (int) $item->getQty();
-                $qty = $qty > 0 ? $qty : (int) $item->getQtyOrdered();
+                $qty = (int)$item->getQty();
+                $qty = $qty > 0 ? $qty : (int)$item->getQtyOrdered();
                 if ($qty) {
                     $items[] = $item;
                 }

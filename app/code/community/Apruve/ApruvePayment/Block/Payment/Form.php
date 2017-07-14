@@ -20,7 +20,7 @@
  */
 class Apruve_ApruvePayment_Block_Payment_Form extends Mage_Payment_Block_Form
 {
-    protected function _construct() 
+    protected function _construct()
     {
         parent::_construct();
         $this->setTemplate('apruvepayment/payment/form.phtml');

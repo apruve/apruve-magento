@@ -30,11 +30,11 @@ class Apruve_ApruvePayment_Model_Mode
      *
      * @return array
      */
-    public function toOptionArray() 
+    public function toOptionArray()
     {
         return array(
-            array( 'value' => 0, 'label' => Mage::helper('apruvepayment')->__('live') ),
-            array( 'value' => 1, 'label' => Mage::helper('apruvepayment')->__('test') ),
+            array('value' => 0, 'label' => Mage::helper('apruvepayment')->__('live')),
+            array('value' => 1, 'label' => Mage::helper('apruvepayment')->__('test')),
         );
     }
 
@@ -43,7 +43,7 @@ class Apruve_ApruvePayment_Model_Mode
      *
      * @return array
      */
-    public function toArray() 
+    public function toArray()
     {
         return array(
             0 => Mage::helper('apruvepayment')->__('live'),

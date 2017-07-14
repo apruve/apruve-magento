@@ -20,7 +20,7 @@
 ?>
 
 <?php
-$helper          = Mage::helper( 'apruvepayment' );
+$helper          = Mage::helper('apruvepayment');
 $paymentApiModel = $helper->getPaymentApiModel();
 ?>
 
@@ -31,8 +31,8 @@ $paymentApiModel = $helper->getPaymentApiModel();
 <script type="text/javascript">
     var sh = '<?php echo $paymentApiModel->getSecureHash();?>';
     var pr = <?php echo $paymentApiModel->getPaymentRequestJSON();?>;
-    var shopperName = '<?php echo $paymentApiModel->getShopperInfo( 'name' );?>';
-    var shopperEmail = '<?php echo $paymentApiModel->getShopperInfo( 'email' );?>';
+    var shopperName = '<?php echo $paymentApiModel->getShopperInfo('name');?>';
+    var shopperEmail = '<?php echo $paymentApiModel->getShopperInfo('email');?>';
     var autoSubmit = '<?php echo $helper->isAutoSubmit();?>';
     var paymentMethodCode = '<?php echo Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE; ?>';
     document.getElementById("aprt").value = aprt;

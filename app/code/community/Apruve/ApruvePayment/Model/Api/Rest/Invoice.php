@@ -33,14 +33,17 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
      *
      * @return $result string[]
      */
-    public function createInvoice( $apruveOrderId, $invoice ) 
+    public function createInvoice($apruveOrderId, $invoice)
     {
         $data = $this->_getInvoiceData($invoice);
 
-        $curlOptions                       = array();
-        $curlOptions[ CURLOPT_POSTFIELDS ] = $data;
+        $curlOptions                     = array();
+        $curlOptions[CURLOPT_POSTFIELDS] = $data;
 
-        $result               = $this->execCurlRequest($this->_getCreateInvoiceUrl($apruveOrderId), 'POST', $curlOptions);
+        $result               = $this->execCurlRequest(
+            $this->_getCreateInvoiceUrl($apruveOrderId), 'POST',
+            $curlOptions
+        );
         $apruveInvoiceId      = isset($result['response']['id']) ? $result['response']['id'] : '';
         $apruveInvoiceItemIds = isset($result['response']['invoice_items']) ? $result['response']['invoice_items'] : '';
         if ($result['success'] == true) {
@@ -57,7 +60,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
      *
      * @return $data []
      */
-    protected function _getInvoiceData( $invoice ) 
+    protected function _getInvoiceData($invoice)
     {
         $invoiceItems = Mage::helper('apruvepayment')->getAllVisibleItems($invoice);
 
@@ -81,7 +84,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
         }
 
         // get discount line item
-        if (( $discountItem = $this->_getDiscountItem($invoice) )) {
+        if (($discountItem = $this->_getDiscountItem($invoice))) {
             $items[] = $discountItem;
         }
 
@@ -91,18 +94,17 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
         /* prepare invoice data */
         $data = json_encode(
             array(
-            'invoice' => array(
-                'amount_cents'        => $this->convertPrice($invoice->getBaseGrandTotal()),
-                'currency'            => $this->getCurrency(),
-                'shipping_cents'      => $this->convertPrice($invoice->getBaseShippingAmount()),
-                'tax_cents'           => $this->convertPrice($invoice->getBaseTaxAmount()),
-                'merchant_notes'      => $comment->getComment(),
-                'merchant_invoice_id' => $invoice->getIncrementId(),
-                //'due_at' => '2016-06-01T13:54:21Z',
-                'invoice_items'       => $items,
-                'issue_on_create'     => true
+                'invoice' => array(
+                    'amount_cents'        => $this->convertPrice($invoice->getBaseGrandTotal()),
+                    'currency'            => $this->getCurrency(),
+                    'shipping_cents'      => $this->convertPrice($invoice->getBaseShippingAmount()),
+                    'tax_cents'           => $this->convertPrice($invoice->getBaseTaxAmount()),
+                    'merchant_notes'      => $comment->getComment(),
+                    'merchant_invoice_id' => $invoice->getIncrementId(),
+                    'invoice_items'       => $items,
+                    'issue_on_create'     => true
+                )
             )
-            ) 
         );
 
         return $data;
@@ -115,7 +117,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
      *
      * @return $comment Mage_Sales_Model_Order_Invoice_Comment
      */
-    protected function _getInvoiceComment( $invoice ) 
+    protected function _getInvoiceComment($invoice)
     {
         $comment = Mage::getResourceModel('sales/order_invoice_comment_collection')
                        ->setInvoiceFilter($invoice->getId())
@@ -133,13 +135,13 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
      *
      * @return string
      */
-    protected function _getCreateInvoiceUrl( $apruveOrderId ) 
+    protected function _getCreateInvoiceUrl($apruveOrderId)
     {
         if ($apruveOrderId === null) {
             Mage::throwException(Mage::helper('apruvepayment')->__('No Apruve Order ID for _getCreateInvoiceUrl'));
         }
 
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'orders/' . $apruveOrderId . '/invoices';
+        return $this->getBaseUrl(true).$this->getApiUrl().'orders/'.$apruveOrderId.'/invoices';
     }
 
     /**
@@ -151,7 +153,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
      * @return bool
      * @throws Exception
      */
-    protected function _updateInvoiceId( $apruveInvoiceId, $apruveInvoiceItemIds, $invoice ) 
+    protected function _updateInvoiceId($apruveInvoiceId, $apruveInvoiceItemIds, $invoice)
     {
         try {
             $apruveInvoiceItemIds = Mage::helper('core')->jsonEncode($apruveInvoiceItemIds);
@@ -161,7 +163,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
             $apruveEntity->setMagentoId($invoice->getIncrementId());
             $apruveEntity->setEntityType('invoice');
             $apruveEntity->save();
-        } catch (Exception $e) {
+        } catch(Exception $e) {
             Mage::helper('apruvepayment')->logException($e->getMessage());
             Mage::throwException(Mage::helper('apruvepayment')->__('Couldn\'t update invoice.'));
         }
@@ -176,12 +178,12 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
      *
      * @return $result string
      */
-    public function updateInvoice( $apruveInvoiceId, $invoice ) 
+    public function updateInvoice($apruveInvoiceId, $invoice)
     {
         $data = $this->_getInvoiceData($invoice);
 
-        $curlOptions                       = array();
-        $curlOptions[ CURLOPT_POSTFIELDS ] = $data;
+        $curlOptions                     = array();
+        $curlOptions[CURLOPT_POSTFIELDS] = $data;
 
         $result = $this->execCurlRequest($this->_getUpdateInvoiceUrl($apruveInvoiceId), 'PUT', $curlOptions);
 
@@ -195,9 +197,9 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
      *
      * @return string
      */
-    protected function _getUpdateInvoiceUrl( $apruveInvoiceId ) 
+    protected function _getUpdateInvoiceUrl($apruveInvoiceId)
     {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'invoices/' . $apruveInvoiceId;
+        return $this->getBaseUrl(true).$this->getApiUrl().'invoices/'.$apruveInvoiceId;
     }
 
     /**
@@ -207,7 +209,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
      *
      * @return $result string
      */
-    public function getInvoiceItemIds( $apruveInvoiceId ) 
+    public function getInvoiceItemIds($apruveInvoiceId)
     {
         $invoice      = $this->getInvoice($apruveInvoiceId);
         $invoiceArray = json_decode($invoice);
@@ -226,7 +228,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
      *
      * @return $result string
      */
-    public function getInvoice( $apruveInvoiceId ) 
+    public function getInvoice($apruveInvoiceId)
     {
         $result = $this->execCurlRequest($this->_getInvoiceUrl($apruveInvoiceId));
 
@@ -240,9 +242,9 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
      *
      * @return string
      */
-    protected function _getInvoiceUrl( $apruveInvoiceId ) 
+    protected function _getInvoiceUrl($apruveInvoiceId)
     {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'invoices/' . $apruveInvoiceId;
+        return $this->getBaseUrl(true).$this->getApiUrl().'invoices/'.$apruveInvoiceId;
     }
 
     /**
@@ -252,7 +254,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
      *
      * @return $result string
      */
-    public function cancelInvoice( $apruveInvoiceId ) 
+    public function cancelInvoice($apruveInvoiceId)
     {
         $result = $this->execCurlRequest($this->_getCancelInvoiceUrl($apruveInvoiceId), 'POST');
 
@@ -266,9 +268,9 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
      *
      * @return string
      */
-    protected function _getCancelInvoiceUrl( $apruveInvoiceId ) 
+    protected function _getCancelInvoiceUrl($apruveInvoiceId)
     {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'invoices/' . $apruveInvoiceId . '/cancel';
+        return $this->getBaseUrl(true).$this->getApiUrl().'invoices/'.$apruveInvoiceId.'/cancel';
     }
 
     /**
@@ -278,18 +280,18 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
      *
      * @return $result string
      */
-    public function refundInvoice( $apruveInvoiceId, $amount ) 
+    public function refundInvoice($apruveInvoiceId, $amount)
     {
 
-        $data                              = json_encode(
+        $data                            = json_encode(
             array(
-            "amount_cents" => ( $amount * 100 ),
-            "currency"     => "USD",
-            "reason"       => "OTHER"
-            ) 
+                "amount_cents" => ($amount * 100),
+                "currency"     => "USD",
+                "reason"       => "OTHER"
+            )
         );
-        $curlOptions                       = array();
-        $curlOptions[ CURLOPT_POSTFIELDS ] = $data;
+        $curlOptions                     = array();
+        $curlOptions[CURLOPT_POSTFIELDS] = $data;
 
         $result = $this->execCurlRequest($this->_getInvoiceRefundUrl($apruveInvoiceId), 'POST', $curlOptions);
 
@@ -303,9 +305,9 @@ class Apruve_ApruvePayment_Model_Api_Rest_Invoice extends Apruve_ApruvePayment_M
      *
      * @return string
      */
-    protected function _getInvoiceRefundUrl( $apruveInvoiceId ) 
+    protected function _getInvoiceRefundUrl($apruveInvoiceId)
     {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'invoices/' . $apruveInvoiceId . '/invoice_returns';
+        return $this->getBaseUrl(true).$this->getApiUrl().'invoices/'.$apruveInvoiceId.'/invoice_returns';
     }
 
 }

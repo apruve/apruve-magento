@@ -20,14 +20,13 @@
  */
 class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_Action
 {
-    public function updateOrderStatusAction() 
+    public function updateOrderStatusAction()
     {
-        $hash = $this->_getHashedQueryString();
+        $hash = filter_input(INPUT_GET, $this->_getHashedQueryString());
 
         // if the hash doesn't match the data sent by Apruve terminate the code
-        if (! isset($_GET[ $hash ])) {
-            header("HTTP/1.1 404 Not Found");
-            exit;
+        if (! isset($hash)) {
+            $this->_properExit(404);
         }
 
         // if the hash matches the data sent by Apruve move forward with the appropriate process
@@ -41,38 +40,34 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
 
             // check the event triggered in Apruve to call appropriate action in Magento
             if ($event == 'invoice.closed') {
-                $invoiceId = $entity->merchant_invoice_id;
+                $invoiceId = $entity->merchantInvoiceId;
                 if (! $this->_capturePayment($invoiceId)) {
-                    header("HTTP/1.1 404 Not Found");
-                    exit;
+                    $this->_properExit(404);
                 };
             } elseif ($event == 'order.accepted') {
-                exit; // should not be triggering anything in magento
+                $this->_properExit(); // should not be triggering anything in magento
 
-                $orderId = $entity->merchant_order_id;
+                $orderId = $entity->merchantOrderId;
                 if (! $this->_changeOrderStatus($orderId)) {
-                    header("HTTP/1.1 404 Not Found");
-                    exit;
+                    $this->_properExit(404);
                 };
             } elseif ($event == 'order.canceled') {
-                $orderId = $entity->merchant_order_id;
+                $orderId = $entity->merchantOrderId;
                 if (! $this->_cancelOrder($orderId)) {
-                    header("HTTP/1.1 404 Not Found");
-                    exit;
+                    $this->_properExit(404);
                 };
             } elseif ($event == 'payment_term.accepted') {
-                $orderId = $entity->merchant_order_id;
+                $orderId = $entity->merchantOrderId;
                 if (! $this->_paymentTermAccepted($orderId)) {
-                    header("HTTP/1.1 404 Not Found");
-                    exit;
+                    $this->_properExit(404);
                 };
             }
-        } catch (Exception $e) {
-            Mage::helper('apruvepayment')->logException('Error for transaction UUID: ' . $data->uuid . '. Message: ' . $e->getMessage());
+        } catch(Exception $e) {
+            Mage::helper('apruvepayment')
+                ->logException('Error for transaction UUID: '.$data->uuid.'. Message: '.$e->getMessage());
         }
 
-        header("HTTP/1.1 200");
-        exit;
+        $this->_properExit(200);
     }
 
     /**
@@ -80,14 +75,22 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
      *
      * @return string
      */
-    protected function _getHashedQueryString() 
+    protected function _getHashedQueryString()
     {
         $merchantKey = Mage::getStoreConfig('payment/apruvepayment/merchant');
         $apiKey      = Mage::getStoreConfig('payment/apruvepayment/api');
-        $data        = $apiKey . $merchantKey;
+        $data        = $apiKey.$merchantKey;
         $hash        = hash('sha256', $data);
 
         return $hash;
+    }
+
+    protected function _properExit($status)
+    {
+        $this->getResponse()
+             ->clearHeaders()
+             ->setHeader('HTTP/1.1', $status, true)
+             ->setBody("HTTP/1.1 404 Not Found");
     }
 
     /**
@@ -97,7 +100,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
      *
      * @return bool
      */
-    protected function _capturePayment( $invoiceId ) 
+    protected function _capturePayment($invoiceId)
     {
         if ($invoiceId) {
             /** @var Mage_Sales_Model_Order_Invoice_Api $iApi */
@@ -117,7 +120,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
      *
      * @return bool
      */
-    protected function _changeOrderStatus( $orderId ) 
+    protected function _changeOrderStatus($orderId)
     {
         $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
         Mage::helper('apruvepayment')->logException($order->getData());
@@ -140,7 +143,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
      *
      * @return bool
      */
-    protected function _createInvoice( $orderId ) 
+    protected function _createInvoice($orderId)
     {
         if ($orderId) {
             /** @var Mage_Sales_Model_Order_Invoice_Api $iApi */
@@ -160,7 +163,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
      *
      * @return bool
      */
-    protected function _cancelOrder( $orderId ) 
+    protected function _cancelOrder($orderId)
     {
         $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
         if ($order && $order->getId() && ! $order->isCanceled()) {
@@ -180,7 +183,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
      *
      * @return bool
      */
-    protected function _paymentTermAccepted( $orderId ) 
+    protected function _paymentTermAccepted($orderId)
     {
         $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
         Mage::helper('apruvepayment')->logException($order->getData());
@@ -207,16 +210,18 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
      *
      * @return bool
      */
-    protected function _addPayed( $paymentRequestId, $paymentId ) 
+    protected function _addPayed($paymentRequestId, $paymentId)
     {
         /** @var Mage_Sales_Model_Order_Payment_Transaction $transaction */
         $transaction = Mage::getModel('sales/order_payment_transaction')->getCollection()
-                           ->addAttributeToFilter('txn_id', array( 'eq' => $paymentRequestId . "_" . $paymentId ))
+                           ->addAttributeToFilter('txn_id', array('eq' => $paymentRequestId."_".$paymentId))
+                           ->setPageSize(1)
                            ->getFirstItem();
         if (! $transaction->getId()) {
             /** @var Mage_Sales_Model_Order_Payment_Transaction $transaction */
             $transaction = Mage::getModel('sales/order_payment_transaction')->getCollection()
-                               ->addAttributeToFilter('txn_id', array( 'eq' => $paymentRequestId ))
+                               ->addAttributeToFilter('txn_id', array('eq' => $paymentRequestId))
+                               ->setPageSize(1)
                                ->getFirstItem();
         }
 

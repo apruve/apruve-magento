@@ -33,21 +33,21 @@ class Apruve_ApruvePayment_Model_Api_Rest extends Apruve_ApruvePayment_Model_Api
      *
      * @return $response string
      */
-    public function execCurlRequest( $url, $method = 'GET', $curlOptions = array() ) 
+    public function execCurlRequest($url, $method = 'GET', $curlOptions = array())
     {
         $curl = curl_init();
 
         curl_setopt_array(
             $curl, array(
-            CURLOPT_URL            => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING       => "",
-            CURLOPT_MAXREDIRS      => 10,
-            CURLOPT_TIMEOUT        => 30,
-            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST  => $method,
-            CURLOPT_HTTPHEADER     => $this->getHeaders(),
-            ) 
+                CURLOPT_URL            => $url,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING       => "",
+                CURLOPT_MAXREDIRS      => 10,
+                CURLOPT_TIMEOUT        => 30,
+                CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST  => $method,
+                CURLOPT_HTTPHEADER     => $this->getHeaders(),
+            )
         );
 
         curl_setopt_array($curl, $curlOptions);

@@ -60,14 +60,13 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
      * @var array
      */
     protected $_paymentRequest;
-    private $_quote;
-    private $_amounts;
+    protected $_quote;
 
     /**
      * Get json encoded payment request
      * @return string
      */
-    public function getPaymentRequestJSON() 
+    public function getPaymentRequestJSON()
     {
         return json_encode($this->_getPaymentRequest());
     }
@@ -76,7 +75,7 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
      * Build Payment Request Array
      * @return array
      */
-    protected function _getPaymentRequest() 
+    protected function _getPaymentRequest()
     {
         if ($this->_paymentRequest == null) {
             $this->_paymentRequest = array(
@@ -99,14 +98,14 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
      *
      * @return float | bool
      */
-    public function getAmount( $key ) 
+    public function getAmount($key)
     {
         if (empty($this->amounts)) {
             $this->amounts = $this->getAmountsFromQuote($this->getQuote());
         }
 
-        if (isset($this->amounts[ $key ])) {
-            return $this->amounts[ $key ];
+        if (isset($this->amounts[$key])) {
+            return $this->amounts[$key];
         }
 
         return false;
@@ -116,7 +115,7 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
      * Get current quote
      * @return Mage_Sales_Model_Quote
      */
-    public function getQuote() 
+    public function getQuote()
     {
         if ($this->_quote == null) {
             $this->_quote = Mage::getSingleton('checkout/session')->getQuote();
@@ -132,7 +131,7 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
      *
      * @return array
      */
-    protected function getLineItems( $itemsParent ) 
+    protected function getLineItems($itemsParent)
     {
         $result = array();
         /** @var Mage_Sales_Model_Quote_Item[] $visibleItems */
@@ -151,7 +150,7 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
         }
 
         // get discount line item
-        if (( $discountItem = $this->_getDiscountItem($itemsParent) )) {
+        if (($discountItem = $this->_getDiscountItem($itemsParent))) {
             $result[] = $discountItem;
         }
 
@@ -163,7 +162,7 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
      * @see https://apruvit.atlassian.net/wiki/display/DOCCO/Checkout+Page+Tutorial#CheckoutPageTutorial-1b:CreatingaSecureHash
      * @return string
      */
-    public function getSecureHash() 
+    public function getSecureHash()
     {
         $concatString = $this->getApiKey();
 
@@ -185,9 +184,9 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
     /**
      * @param Mage_Sales_Model_Quote $quote
      */
-    public function getShopperInfo( $attrName ) 
+    public function getShopperInfo($attrName)
     {
-        $method = 'get' . ucfirst($attrName);
+        $method = 'get'.ucfirst($attrName);
         if ($this->getQuote()->getCustomerIsGuest()) {
             return $this->getQuote()->getBillingAddress()->$method();
         }
