@@ -20,7 +20,7 @@
 ?>
 
 <?php
-$helper = Mage::helper('apruvepayment');
+$helper          = Mage::helper( 'apruvepayment' );
 $paymentApiModel = $helper->getPaymentApiModel();
 ?>
 
@@ -31,31 +31,31 @@ $paymentApiModel = $helper->getPaymentApiModel();
 <script type="text/javascript">
     var sh = '<?php echo $paymentApiModel->getSecureHash();?>';
     var pr = <?php echo $paymentApiModel->getPaymentRequestJSON();?>;
-    var shopperName = '<?php echo $paymentApiModel->getShopperInfo('name');?>';
-    var shopperEmail = '<?php echo $paymentApiModel->getShopperInfo('email');?>';
+    var shopperName = '<?php echo $paymentApiModel->getShopperInfo( 'name' );?>';
+    var shopperEmail = '<?php echo $paymentApiModel->getShopperInfo( 'email' );?>';
     var autoSubmit = '<?php echo $helper->isAutoSubmit();?>';
     var paymentMethodCode = '<?php echo Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE; ?>';
     document.getElementById("aprt").value = aprt;
 
-    Payment.prototype.save = Payment.prototype.save.wrap(function(save) {
+    Payment.prototype.save = Payment.prototype.save.wrap(function (save) {
         var validator = new Validation(this.form);
         if (this.validate() && validator.validate()) {
             // DO WHAT YOU WANT TO DO BEFORE SAVE
             var oApruvePayment = new ApruvePayment(sh, pr, shopperName, shopperEmail, autoSubmit, true);
 
             var paymentMethod = '';
-            for(i in document.getElementsByName('payment[method]')) {
-                if(document.getElementsByName('payment[method]').hasOwnProperty(i) && document.getElementsByName('payment[method]')[i].checked) {
+            for (i in document.getElementsByName('payment[method]')) {
+                if (document.getElementsByName('payment[method]').hasOwnProperty(i) && document.getElementsByName('payment[method]')[i].checked) {
                     paymentMethod = document.getElementsByName('payment[method]')[i].value;
                 }
             }
-            if(paymentMethod == paymentMethodCode && document.getElementById("aprt").value == ''){
+            if (paymentMethod == paymentMethodCode && document.getElementById("aprt").value == '') {
                 apruve.startCheckout();
             }
-            if((paymentMethod == paymentMethodCode && document.getElementById("aprt").value !== '') || paymentMethod !== paymentMethodCode){
-                    aprt = document.getElementById("aprt").value;
-                    save(); // THIS WILL CALL CORE SAVE THAT WAS WRAPPED
-                }
+            if ((paymentMethod == paymentMethodCode && document.getElementById("aprt").value !== '') || paymentMethod !== paymentMethodCode) {
+                aprt = document.getElementById("aprt").value;
+                save(); // THIS WILL CALL CORE SAVE THAT WAS WRAPPED
+            }
         }
     });
 </script>

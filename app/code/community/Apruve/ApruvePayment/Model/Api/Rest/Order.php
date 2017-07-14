@@ -26,79 +26,29 @@
 class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Model_Api_Rest
 {
     /**
-     * Get url order url
-     * @param string $apruveOrderId
-     * @return string
-     */
-    protected function _getOrderUrl($apruveOrderId)
-    {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'orders/' . $apruveOrderId;
-    }
-
-
-    /**
-     * Get url for update order
-     * @param string $apruveOrderId
-     * @return string
-     */
-    protected function _getUpdateOrderUrl($apruveOrderId)
-    {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'orders/' . $apruveOrderId;
-    }
-
-    /**
-     * Get url for order finalizing
-     * @param string $apruveOrderId
-     * @return string
-     */
-    protected function _getFinalizeOrderUrl($apruveOrderId)
-    {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'orders/' . $apruveOrderId . '/finalize';
-    }
-
-    /**
-     * Get url for order cancel
-     * @param string $apruveOrderId
-     * @return string
-     */
-    protected function _getCancelOrderUrl($apruveOrderId)
-    {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'orders/' . $apruveOrderId . '/cancel';
-    }
-
-    /**
      * Retrieve an existing order by its ID in apruve
      *
      * @param $id string
+     *
      * @return $result string
      */
-    public function getOrder($apruveOrderId)
+    public function getOrder( $apruveOrderId ) 
     {
         $result = $this->execCurlRequest($this->_getOrderUrl($apruveOrderId));
+
         return $result;
     }
 
     /**
-     * Update Apruve order id to it's corresponding order in magento
+     * Get url order url
      *
-     * @param $id string
-     * @param $order Mage_Sales_Model_Order
-     * @return bool
-     * @throws Mage_Core_Exception
+     * @param string $apruveOrderId
+     *
+     * @return string
      */
-    protected function _updateOrderId($apruveOrderId, $order)
+    protected function _getOrderUrl( $apruveOrderId ) 
     {
-        try {
-            $apruveEntity = Mage::getModel('apruvepayment/entity')->loadByOrderId($order->getIncrementId());
-            $apruveEntity->setApruveId($apruveOrderId);
-            $apruveEntity->setMagentoId($order->getIncrementId());
-            $apruveEntity->setEntityType('order');
-            $apruveEntity->save();
-        } catch (Exception $e) {
-            Mage::helper('apruvepayment')->logException('Couldn\'t update the order: ' . $e->getMessage());
-            Mage::throwException(Mage::helper('apruvepayment')->__('Couldn\'t update order.'));
-        }
-        return true;
+        return $this->getBaseUrl(true) . $this->getApiUrl() . 'orders/' . $apruveOrderId;
     }
 
     /**
@@ -108,9 +58,10 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
      *
      * @param string $apruveOrderId
      * @param Mage_Sales_Model_Order $order
+     *
      * @return string $result
      */
-    public function updateOrder($apruveOrderId, $order)
+    public function updateOrder( $apruveOrderId, $order ) 
     {
         if (Mage::app()->getStore()->isAdmin()) {
             return $this->_updateAdminOrder($apruveOrderId, $order);
@@ -124,39 +75,43 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
      *
      * @param string $apruveOrderId
      * @param Mage_Sales_Model_Order $order
+     *
      * @return string $result
      */
-    protected function _updateAdminOrder($apruveOrderId, $order)
+    protected function _updateAdminOrder( $apruveOrderId, $order ) 
     {
-        $result = null;
+        $result    = null;
         $lineItems = $this->_getLineItems($order);
 
         // get discount line item
-        if (($discountItem = $this->_getDiscountItem($order))) {
+        if (( $discountItem = $this->_getDiscountItem($order) )) {
             $lineItems[] = $discountItem;
         }
+
         $corporateAccount = Mage::getModel('apruvepayment/api_rest_account');
         $corporateAccount->getCorporateAccount($order->getCustomerEmail());
-        $shopper_id = $corporateAccount->getShopperId($order->getCustomerEmail());
+        $shopper_id   = $corporateAccount->getShopperId($order->getCustomerEmail());
         $payment_term = $corporateAccount->getPaymentTerm();
 
         if ($shopper_id) {
-            $data = json_encode(array(
+            $data = json_encode(
+                array(
                 'order' => array(
-                    'merchant_id' => $this->getMerchantKey(),
+                    'merchant_id'       => $this->getMerchantKey(),
                     'merchant_order_id' => $order->getIncrementId(),
-                    'shopper_id' => $shopper_id,
-                    'payment_term' => $payment_term,
-                    'amount_cents' => $this->convertPrice($order->getBaseGrandTotal()),
-                    'shipping_cents' => $this->convertPrice($order->getBaseShippingAmount()),
-                    'tax_cents' => $this->convertPrice($order->getBaseTaxAmount()),
+                    'shopper_id'        => $shopper_id,
+                    'payment_term'      => $payment_term,
+                    'amount_cents'      => $this->convertPrice($order->getBaseGrandTotal()),
+                    'shipping_cents'    => $this->convertPrice($order->getBaseShippingAmount()),
+                    'tax_cents'         => $this->convertPrice($order->getBaseTaxAmount()),
                     'invoice_on_create' => 'false',
-                    'order_items' => $lineItems
+                    'order_items'       => $lineItems
                 )
-            ));
+                ) 
+            );
 
-            $curlOptions = [];
-            $curlOptions[CURLOPT_POSTFIELDS] = $data;
+            $curlOptions                       = array();
+            $curlOptions[ CURLOPT_POSTFIELDS ] = $data;
 
             if ($apruveOrderId === null) {
                 $curlAction = 'POST';
@@ -169,11 +124,76 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
                 if ($apruveOrderId == null) {
                     $apruveOrderId = $result['response']['id'];
                 }
+
                 Mage::helper('apruvepayment')->logException('Order updated successfully...');
                 $this->_updateOrderId($apruveOrderId, $order);
             }
         }
+
         return $result;
+    }
+
+    /**
+     * Get Magento line items prepared for Apruve
+     *
+     * @param $lineItems Mage_Sales_Model_Order_Item
+     *
+     * @return $items array
+     */
+    protected function _getLineItems( $order ) 
+    {
+        $items = array();
+
+        foreach ($order->getAllVisibleItems() as $item) {
+            $items[] = array(
+                'title'             => $item->getName(),
+                'description'       => $item->getDescription(),
+                'price_total_cents' => $item->getRowTotal() * 100,
+                'price_ea_cents'    => $item->getPrice() * 100,
+                'quantity'          => $item->getQtyOrdered(),
+                'sku'               => $item->getSku(),
+                'view_product_url'  => $item->getProduct()->getUrlInStore()
+            );
+        }
+
+        return $items;
+    }
+
+    /**
+     * Get url for update order
+     *
+     * @param string $apruveOrderId
+     *
+     * @return string
+     */
+    protected function _getUpdateOrderUrl( $apruveOrderId ) 
+    {
+        return $this->getBaseUrl(true) . $this->getApiUrl() . 'orders/' . $apruveOrderId;
+    }
+
+    /**
+     * Update Apruve order id to it's corresponding order in magento
+     *
+     * @param $id string
+     * @param $order Mage_Sales_Model_Order
+     *
+     * @return bool
+     * @throws Mage_Core_Exception
+     */
+    protected function _updateOrderId( $apruveOrderId, $order ) 
+    {
+        try {
+            $apruveEntity = Mage::getModel('apruvepayment/entity')->loadByOrderId($order->getIncrementId());
+            $apruveEntity->setApruveId($apruveOrderId);
+            $apruveEntity->setMagentoId($order->getIncrementId());
+            $apruveEntity->setEntityType('order');
+            $apruveEntity->save();
+        } catch (Exception $e) {
+            Mage::helper('apruvepayment')->logException('Couldn\'t update the order: ' . $e->getMessage());
+            Mage::throwException(Mage::helper('apruvepayment')->__('Couldn\'t update order.'));
+        }
+
+        return true;
     }
 
     /**
@@ -181,16 +201,19 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
      *
      * @param string $apruveOrderId
      * @param Mage_Sales_Model_Order $order
+     *
      * @return string $result
      */
-    protected function _updateFrontendOrder($apruveOrderId, $order)
+    protected function _updateFrontendOrder( $apruveOrderId, $order ) 
     {
-        $lineItems = [];
+        $lineItems = array();
         // get discount line item
-        if(($discountItem = $this->_getDiscountItem($order))) {
+        if (( $discountItem = $this->_getDiscountItem($order) )) {
             $lineItems[] = $discountItem;
         }
-        $data = json_encode(array(
+
+        $data                              = json_encode(
+            array(
             'order' => array(
                 'merchant_order_id' => $order->getIncrementId(),
                 'amount_cents'      => $this->convertPrice($order->getBaseGrandTotal()),
@@ -199,56 +222,33 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
                 'invoice_on_create' => 'false',
                 'order_items'       => $lineItems
             )
-        ));
-        $curlOptions = [];
-        $curlOptions[CURLOPT_POSTFIELDS] = $data;
-        $result = $this->execCurlRequest($this->_getUpdateOrderUrl($apruveOrderId), 'PUT', $curlOptions);
-        if($result['success'] == true) {
+            ) 
+        );
+        $curlOptions                       = array();
+        $curlOptions[ CURLOPT_POSTFIELDS ] = $data;
+        $result                            = $this->execCurlRequest($this->_getUpdateOrderUrl($apruveOrderId), 'PUT', $curlOptions);
+        if ($result['success'] == true) {
             Mage::helper('apruvepayment')->logException('Order updated successfully...');
             $this->_updateOrderId($apruveOrderId, $order);
         }
+
         return $result;
-    }
-
-    /**
-     * Get url for order invoices
-     * @param string $apruveOrderId
-     * @return string
-     */
-    protected function _getOrderInvoicesUrl($apruveOrderId)
-    {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'orders/' . $apruveOrderId . '/invoices';
-    }
-
-    /**
-     * Get order from quote
-     *
-     * @param $quote Mage_Sales_Model_Quote
-     * @return $order Mage_Sales_Model_Order
-     * @throws Mage_Core_Exception
-     */
-    protected function _getOrderFromQuote($quote)
-    {
-        $orderIncrementId = $quote->getReservedOrderId();
-        $order = Mage::getModel('sales/order')->loadByIncrementId($orderIncrementId);
-        if (!$order->getId()) {
-            Mage::throwException(Mage::helper('apruvepayment')->__('Couldn\'t load the order.'));
-        }
-        return $order;
     }
 
     /**
      * Get invoices from order
      *
      * @param $apruveOrderId string
+     *
      * @return $invoices
      * @throws Mage_Core_Exception
      */
-    public function getInvoices($apruveOrderId)
+    public function getInvoices( $apruveOrderId ) 
     {
         $result = $this->execCurlRequest($this->_getOrderInvoicesUrl($apruveOrderId));
         if ($result['success'] == true) {
             Mage::helper('apruvepayment')->logException('getInvoices...');
+
             return $result['response'];
         } else {
             Mage::throwException(Mage::helper('apruvepayment')->__('Couldn\'t get invoices from order.'));
@@ -257,15 +257,27 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
         return $result;
     }
 
+    /**
+     * Get url for order invoices
+     *
+     * @param string $apruveOrderId
+     *
+     * @return string
+     */
+    protected function _getOrderInvoicesUrl( $apruveOrderId ) 
+    {
+        return $this->getBaseUrl(true) . $this->getApiUrl() . 'orders/' . $apruveOrderId . '/invoices';
+    }
 
     /**
      * Finalize an existing order by its ID in apruve
      *
      * @param $apruveOrderId string
      * @param $order Mage_Sales_Model_Order
+     *
      * @return $result string
      */
-    public function finalizeOrder($apruveOrderId, $order)
+    public function finalizeOrder( $apruveOrderId, $order ) 
     {
         $result = $this->execCurlRequest($this->_getFinalizeOrderUrl($apruveOrderId), 'POST');
         if ($result['success'] == true) {
@@ -277,39 +289,59 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
     }
 
     /**
+     * Get url for order finalizing
+     *
+     * @param string $apruveOrderId
+     *
+     * @return string
+     */
+    protected function _getFinalizeOrderUrl( $apruveOrderId ) 
+    {
+        return $this->getBaseUrl(true) . $this->getApiUrl() . 'orders/' . $apruveOrderId . '/finalize';
+    }
+
+    /**
      * Cancel an existing order by its ID in apruve
      *
      * @param $id string
+     *
      * @return $result string
      */
-    public function cancelOrder($apruveOrderId)
+    public function cancelOrder( $apruveOrderId ) 
     {
         $result = $this->execCurlRequest($this->_getCancelOrderUrl($apruveOrderId), 'POST');
+
         return $result;
     }
 
     /**
-     * Get Magento line items prepared for Apruve
+     * Get url for order cancel
      *
-     * @param $lineItems Mage_Sales_Model_Order_Item
-     * @return $items array
+     * @param string $apruveOrderId
+     *
+     * @return string
      */
-    protected function _getLineItems($order)
+    protected function _getCancelOrderUrl( $apruveOrderId ) 
     {
-        $items = array();
+        return $this->getBaseUrl(true) . $this->getApiUrl() . 'orders/' . $apruveOrderId . '/cancel';
+    }
 
-        foreach ($order->getAllVisibleItems() as $item) {
-            $items[] = array(
-                'title' => $item->getName(),
-                'description' => $item->getDescription(),
-                'price_total_cents' => $item->getRowTotal() * 100,
-                'price_ea_cents' => $item->getPrice() * 100,
-                'quantity' => $item->getQtyOrdered(),
-                'sku' => $item->getSku(),
-                'view_product_url' => $item->getProduct()->getUrlInStore()
-            );
+    /**
+     * Get order from quote
+     *
+     * @param $quote Mage_Sales_Model_Quote
+     *
+     * @return $order Mage_Sales_Model_Order
+     * @throws Mage_Core_Exception
+     */
+    protected function _getOrderFromQuote( $quote ) 
+    {
+        $orderIncrementId = $quote->getReservedOrderId();
+        $order            = Mage::getModel('sales/order')->loadByIncrementId($orderIncrementId);
+        if (! $order->getId()) {
+            Mage::throwException(Mage::helper('apruvepayment')->__('Couldn\'t load the order.'));
         }
 
-        return $items;
+        return $order;
     }
 }

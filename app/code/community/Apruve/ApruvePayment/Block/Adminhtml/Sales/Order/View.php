@@ -27,14 +27,15 @@
 class Apruve_ApruvePayment_Block_Adminhtml_Sales_Order_View extends Mage_Adminhtml_Block_Sales_Order_View
 {
 
-    protected function _isAllowedAction($action)
+    protected function _isAllowedAction( $action ) 
     {
-        if($action == 'invoice') {
+        if ($action == 'invoice') {
             $order = $this->getOrder();
-            if($order->getPayment()->getMethod() == Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE) {
+            if ($order->getPayment()->getMethod() == Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE) {
                 return false;
             }
         }
+
         return parent::_isAllowedAction($action);
     }
 }

@@ -19,21 +19,58 @@
  *
  */
 
- /**
+/**
  * This is an observer created to be triggered based on Magento's event
  * to update Apruve using Apruve's API calls.
  */
 class Apruve_ApruvePayment_Model_Observer
 {
     /**
+     * Finalize the order in Apruve
+     *
+     * @param Varien_Event_Observer $observer
+     *
+     * @return void
+     */
+    public function finalizeOrder( $observer ) 
+    {
+        list( $order, $payment ) = $this->_getOrderInfo($observer);
+
+        if ($payment->getMethod() == Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE) {
+            try {
+                /**
+                 * @var Apruve_ApruvePayment_Helper_Data $apiVersion
+                 */
+                $apiVersion            = Mage::helper('apruvepayment')->getApiVersion();
+                $additionalInformation = $payment->getAdditionalInformation();
+                $token                 = $additionalInformation['aprt'];
+                if ($token && ! $order->getApruveOrderId()) {
+                    /**
+                     * @var Apruve_ApruvePayment_Model_Api_Rest_Order $orderApi
+                     */
+                    $orderApi = Mage::getModel('apruvepayment/api_rest_order');
+                    $result   = $orderApi->finalizeOrder($token, $order);
+                    if (! $result || ! $result['success']) {
+                        Mage::throwException($result['message']);
+                    }
+                }
+            } catch (Exception $e) {
+                Mage::throwException($e->getMessage());
+            }
+        }
+
+    }
+
+    /**
      * Get order and payment objects from observer
      *
      * @param Varien_Event_Observer $observer
+     *
      * @return []
      */
-    protected function _getOrderInfo($observer)
+    protected function _getOrderInfo( $observer ) 
     {
-        $order = null;
+        $order   = null;
         $payment = null;
 
         if ($order = $observer->getEvent()->getOrder()) {
@@ -43,66 +80,33 @@ class Apruve_ApruvePayment_Model_Observer
                 $payment = $order->getPayment();
             }
         }
-        return array($order, $payment);
-    }
 
-    /**
-     * Finalize the order in Apruve
-     *
-     * @param Varien_Event_Observer $observer
-     * @return void
-     */
-    public function finalizeOrder($observer)
-    {
-        list($order, $payment) = $this->_getOrderInfo($observer);
-
-        if ($payment->getMethod() == Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE) {
-            try {
-                /**
-                 * @var Apruve_ApruvePayment_Helper_Data $apiVersion
-                 */
-                $apiVersion = Mage::helper('apruvepayment')->getApiVersion();
-                $additionalInformation = $payment->getAdditionalInformation();
-                $token = $additionalInformation['aprt'];
-                if ($token && !$order->getApruveOrderId()) {
-                    /**
-                     * @var Apruve_ApruvePayment_Model_Api_Rest_Order $orderApi
-                     */
-                    $orderApi = Mage::getModel('apruvepayment/api_rest_order');
-                    $result = $orderApi->finalizeOrder($token, $order);
-                    if(!$result || !$result['success']) {
-                        Mage::throwException($result['message']);
-                    }
-                }
-            } catch(Exception $e) {
-                Mage::throwException($e->getMessage());
-            }
-        }
-
+        return array( $order, $payment );
     }
 
     /**
      * Cancel the order in Apruve
      *
      * @param Varien_Event_Observer $observer
+     *
      * @return void
      */
-    public function cancelOrder($observer)
+    public function cancelOrder( $observer ) 
     {
         /**
          * @var Mage_Sales_Model_Order $order
          */
-        list($order, $payment) = $this->_getOrderInfo($observer);
-        
+        list( $order, $payment ) = $this->_getOrderInfo($observer);
+
         if ($order->getId() && $payment->getMethod() == Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE) {
-            $apruveEntity = Mage::getModel('apruvepayment/entity')->loadByOrderId($order->getIncrementId(), 'magento_id');
+            $apruveEntity  = Mage::getModel('apruvepayment/entity')->loadByOrderId($order->getIncrementId(), 'magento_id');
             $apruveOrderId = $apruveEntity->getApruveId();
 
             /**
              * @var Apruve_ApruvePayment_Model_Api_Rest_Order $orderApi
              */
             $orderApi = Mage::getModel('apruvepayment/api_rest_order');
-            $result = $orderApi->cancelOrder($apruveOrderId);
+            $result   = $orderApi->cancelOrder($apruveOrderId);
         }
     }
 
@@ -110,110 +114,95 @@ class Apruve_ApruvePayment_Model_Observer
      * Create invoice in Apruve
      *
      * @param Varien_Event_Observer $observer
+     *
      * @return void
      */
-    public function createInvoice($observer)
+    public function createInvoice( $observer ) 
     {
         $invoice = $observer->getEvent()->getInvoice();
 
         /**
          * @var Mage_Sales_Model_Order $order
          */
-        $order = $invoice->getOrder();
+        $order   = $invoice->getOrder();
         $payment = $order->getPayment();
 
         if ($order->getId() && $invoice->getIncrementId()
-            && $payment->getMethod() == Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE
+             && $payment->getMethod() == Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE
         ) {
             /**
              * @var Apruve_ApruvePayment_Model_Api_Rest_Invoice $invoiceApi
              */
             $invoiceApi = Mage::getModel('apruvepayment/api_rest_invoice');
 
-            $apruveEntity = Mage::getModel('apruvepayment/entity')->loadByInvoiceId($invoice->getIncrementId());
+            $apruveEntity    = Mage::getModel('apruvepayment/entity')->loadByInvoiceId($invoice->getIncrementId());
             $apruveInvoiceId = $apruveEntity->getApruveId();
-            if($apruveInvoiceId && $invoice->getState() != Mage_Sales_Model_Order_Invoice::STATE_CANCELED) {
+            if ($apruveInvoiceId && $invoice->getState() != Mage_Sales_Model_Order_Invoice::STATE_CANCELED) {
                 $result = $invoiceApi->updateInvoice($apruveInvoiceId, $invoice);
-            } elseif($apruveInvoiceId && $invoice->getState() == Mage_Sales_Model_Order_Invoice::STATE_CANCELED) {
+            } elseif ($apruveInvoiceId && $invoice->getState() == Mage_Sales_Model_Order_Invoice::STATE_CANCELED) {
                 $result = $invoiceApi->cancelInvoice($apruveInvoiceId);
             } else {
-                $apruveEntity = Mage::getModel('apruvepayment/entity')->loadByOrderId($order->getIncrementId());
+                $apruveEntity  = Mage::getModel('apruvepayment/entity')->loadByOrderId($order->getIncrementId());
                 $apruveOrderId = $apruveEntity->getApruveId();
-                $result = $invoiceApi->createInvoice($apruveOrderId, $invoice);
+                $result        = $invoiceApi->createInvoice($apruveOrderId, $invoice);
             }
         }
     }
 
     /**
-     * Get Apruve Invoice from the shipment for an order in magento
+     * Create shipment in Apruve
      *
-     * @param Mage_Sales_Model_Order_Shipment $shipment
-     * @return Mage_Sales_Model_Order_Invoice
+     * @param Varien_Event_Observer $observer
+     *
+     * @return void
      */
-    protected function _getInvoiceFromShipment($shipment)
+    public function createShipment( $observer ) 
     {
-        $order = $shipment->getOrder();
+        $shipment = $observer->getEvent()->getShipment();
 
-        $shipmentDetails = [];
-        foreach ($shipment->getAllItems() as $item) {
-            $shipmentDetails[$item->getSku()] = $item->getQty();
-        }
-
-        $hasInvoices = $order->hasInvoices();
-        $invoices = $order->getInvoiceCollection();
-
-        /* if only one invoice is there then return it's apruve id */
-        if($hasInvoices && $invoices->getSize() == 1) {
-            return $invoices->getFirstItem();
-        } elseif($hasInvoices) {
-            /* if order has more invoices we have to select a matching invoice for the shipment */
-            $apruveInvoice = '';
-            foreach($invoices as $invoice) {
-                $items = $invoice->getAllItems();
-                $apruveInvoice = $invoice;
-                foreach($items as $item) {
-                    if($item->getQty() != $shipmentDetails[$item->getSku()]) {
-                        $apruveInvoice = '';
-                        break;
-                    }
-                }
-                if($apruveInvoice) return $apruveInvoice;
+        /**
+         * @var Mage_Sales_Model_Order $order
+         */
+        $order   = $shipment->getOrder();
+        $payment = $order->getPayment();
+        if ($order->getId() && $shipment->getIncrementId()
+             && $payment->getMethod() == Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE
+        ) {
+            $invoice = $this->_createInvoiceFromShipment($shipment);
+            /**
+             * @var Apruve_ApruvePayment_Model_Api_Rest_Shipment $shipmentApi
+             */
+            $shipmentApi      = Mage::getModel('apruvepayment/api_rest_shipment');
+            $apruveEntity     = Mage::getModel('apruvepayment/entity')->loadByInvoiceId($invoice->getIncrementId(), 'magento_id');
+            $apruveInvoiceId  = $apruveEntity->getApruveId();
+            $apruveEntity     = Mage::getModel('apruvepayment/entity')->loadByShipmentId($shipment->getIncrementId(), 'magento_id');
+            $apruveShipmentId = $apruveEntity->getApruveId();
+            if ($apruveShipmentId) {
+                $result = $shipmentApi->updateShipment($apruveInvoiceId, $apruveShipmentId, $shipment, $invoice);
+            } else {
+                $result = $shipmentApi->createShipment($apruveInvoiceId, $shipment, $invoice);
             }
         }
-    }
-
-    /**
-     * Get the list of items shipped with it's qty
-     *
-     * @param Mage_Sales_Model_Order_Shipment $shipment
-     * @return []
-     */
-    protected function _getShippedItemQty($shipment)
-    {
-        $qtys = [];
-        foreach($shipment->getAllItems() as $item) {
-            $orderItem = $item->getOrderItem();
-            $qtys[$orderItem->getId()] = $item->getQty();
-        }
-        return $qtys;
     }
 
     /**
      * Create Magento Invoice from the shipment for an order in magento
      *
      * @param Mage_Sales_Model_Order_Shipment $shipment
+     *
      * @return Mage_Sales_Model_Order_Invoice
      */
-    protected function _createInvoiceFromShipment($shipment)
+    protected function _createInvoiceFromShipment( $shipment ) 
     {
-        $order = $shipment->getOrder();
+        $order   = $shipment->getOrder();
         $invoice = Mage::getModel('sales/order_invoice');
         try {
             $itemQty = $this->_getShippedItemQty($shipment);
             $invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice($itemQty);
-            if (!$invoice->getTotalQty()) {
+            if (! $invoice->getTotalQty()) {
                 return $invoice;
             }
+
             $invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::NOT_CAPTURE);
             $invoice->register();
 
@@ -221,8 +210,8 @@ class Apruve_ApruvePayment_Model_Observer
             $invoice->getOrder()->setIsInProcess(true);
 
             $transactionSave = Mage::getModel('core/resource_transaction')
-                ->addObject($invoice)
-                ->addObject($invoice->getOrder());
+                                   ->addObject($invoice)
+                                   ->addObject($invoice->getOrder());
 
             $transactionSave->save();
         } catch (Mage_Core_Exception $e) {
@@ -234,36 +223,61 @@ class Apruve_ApruvePayment_Model_Observer
     }
 
     /**
-     * Create shipment in Apruve
+     * Get the list of items shipped with it's qty
      *
-     * @param Varien_Event_Observer $observer
-     * @return void
+     * @param Mage_Sales_Model_Order_Shipment $shipment
+     *
+     * @return []
      */
-    public function createShipment($observer)
+    protected function _getShippedItemQty( $shipment ) 
     {
-        $shipment = $observer->getEvent()->getShipment();
+        $qtys = array();
+        foreach ($shipment->getAllItems() as $item) {
+            $orderItem                   = $item->getOrderItem();
+            $qtys[ $orderItem->getId() ] = $item->getQty();
+        }
 
-        /**
-         * @var Mage_Sales_Model_Order $order
-         */
+        return $qtys;
+    }
+
+    /**
+     * Get Apruve Invoice from the shipment for an order in magento
+     *
+     * @param Mage_Sales_Model_Order_Shipment $shipment
+     *
+     * @return Mage_Sales_Model_Order_Invoice
+     */
+    protected function _getInvoiceFromShipment( $shipment ) 
+    {
         $order = $shipment->getOrder();
-        $payment = $order->getPayment();
-        if ($order->getId() && $shipment->getIncrementId()
-            && $payment->getMethod() == Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE
-        ) {
-            $invoice = $this->_createInvoiceFromShipment($shipment);
-            /**
-             * @var Apruve_ApruvePayment_Model_Api_Rest_Shipment $shipmentApi
-             */
-            $shipmentApi = Mage::getModel('apruvepayment/api_rest_shipment');
-            $apruveEntity = Mage::getModel('apruvepayment/entity')->loadByInvoiceId($invoice->getIncrementId(), 'magento_id');
-            $apruveInvoiceId = $apruveEntity->getApruveId();
-            $apruveEntity = Mage::getModel('apruvepayment/entity')->loadByShipmentId($shipment->getIncrementId(), 'magento_id');
-            $apruveShipmentId = $apruveEntity->getApruveId();
-            if($apruveShipmentId) {
-                $result = $shipmentApi->updateShipment($apruveInvoiceId, $apruveShipmentId, $shipment, $invoice);
-            } else {
-                $result = $shipmentApi->createShipment($apruveInvoiceId, $shipment, $invoice);
+
+        $shipmentDetails = array();
+        foreach ($shipment->getAllItems() as $item) {
+            $shipmentDetails[ $item->getSku() ] = $item->getQty();
+        }
+
+        $hasInvoices = $order->hasInvoices();
+        $invoices    = $order->getInvoiceCollection();
+
+        /* if only one invoice is there then return it's apruve id */
+        if ($hasInvoices && $invoices->getSize() == 1) {
+            return $invoices->getFirstItem();
+        } elseif ($hasInvoices) {
+            /* if order has more invoices we have to select a matching invoice for the shipment */
+            $apruveInvoice = '';
+            foreach ($invoices as $invoice) {
+                $items         = $invoice->getAllItems();
+                $apruveInvoice = $invoice;
+                foreach ($items as $item) {
+                    if ($item->getQty() != $shipmentDetails[ $item->getSku() ]) {
+                        $apruveInvoice = '';
+                        break;
+                    }
+                }
+
+                if ($apruveInvoice) {
+                    return $apruveInvoice;
+                }
             }
         }
     }

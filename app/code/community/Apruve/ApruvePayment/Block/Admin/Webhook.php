@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Magento
  *
@@ -17,20 +18,20 @@
  * @copyright  Copyright (coffee) 2014 Apruve, Inc. (http://www.apruve.com).
  * @license    http://opensource.org/licenses/Apache-2.0  Apache License, Version 2.0
  */
-
 class Apruve_ApruvePayment_Block_Admin_Webhook extends Mage_Adminhtml_Block_System_Config_Form_Field
 {
-    protected function _getElementHtml(Varien_Data_Form_Element_Abstract $element)
+    protected function _getElementHtml( Varien_Data_Form_Element_Abstract $element ) 
     {
         $merchantKey = Mage::getStoreConfig('payment/apruvepayment/merchant');
-        $apiKey = Mage::getStoreConfig('payment/apruvepayment/api');
-        if(!is_null($merchantKey) && !is_null($apiKey)) {
+        $apiKey      = Mage::getStoreConfig('payment/apruvepayment/api');
+        if (! is_null($merchantKey) && ! is_null($apiKey)) {
             return Mage::app()->getDefaultStoreView()->getUrl(
                 "apruvepayment/webhook/updateOrderStatus",
-                array('_query' => array(hash('sha256', $apiKey.$merchantKey) => 1))
+                array( '_query' => array( hash('sha256', $apiKey . $merchantKey) => 1 ) )
             );
         } else {
             $message = 'Please, specify merchant and api key';
+
             return $message;
         }
     }

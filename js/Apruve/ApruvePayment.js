@@ -17,7 +17,7 @@ ApruvePayment.prototype = {
     },
 
     _onLoad: function () {
-        if(this.onContinue) {
+        if (this.onContinue) {
             // initiate callback functions
             this._registerCallbacks();
         } else {
@@ -31,15 +31,18 @@ ApruvePayment.prototype = {
     },
 
     _prepareApruve: function () {
-        $('p_method_apruvepayment').observe('click', function () {
+        $('p_method_apruvepayment').observe(
+            'click', function () {
             apruve.startCheckout();
-        });
+            }
+        );
 
     },
 
     _registerCallbacks: function () {
         var self = this;
-        apruve.registerApruveCallback(apruve.APRUVE_COMPLETE_EVENT, function () {
+        apruve.registerApruveCallback(
+            apruve.APRUVE_COMPLETE_EVENT, function () {
             self._resetApruveRadio();
             if (self.autoSubmit == true) {
                 if (typeof payment !== "undefined" && typeof payment.save === "function") {
@@ -48,11 +51,14 @@ ApruvePayment.prototype = {
                     $(payment.formId).submit();
                 }
             }
-        });
+            }
+        );
 
-        apruve.registerApruveCallback(apruve.APRUVE_CLOSED_EVENT, function () {
+        apruve.registerApruveCallback(
+            apruve.APRUVE_CLOSED_EVENT, function () {
             self._resetApruveRadio();
-        });
+            }
+        );
     },
 
     _resetApruveRadio: function () {
