@@ -79,7 +79,7 @@ class Apruve_ApruvePayment_Helper_Data extends Mage_Core_Helper_Abstract
         $items = array();
         foreach ($object->getItemsCollection() as $item) {
             $orderItem = $item->getOrderItem();
-            if (! $orderItem->isDeleted() && ! $orderItem->getParentItemId()) {
+            if (!$orderItem->isDeleted() && !$orderItem->getParentItemId()) {
                 $qty = (int)$item->getQty();
                 $qty = $qty > 0 ? $qty : (int)$item->getQtyOrdered();
                 if ($qty) {

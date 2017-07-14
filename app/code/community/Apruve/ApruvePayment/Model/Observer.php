@@ -44,13 +44,13 @@ class Apruve_ApruvePayment_Model_Observer
                 $apiVersion            = Mage::helper('apruvepayment')->getApiVersion();
                 $additionalInformation = $payment->getAdditionalInformation();
                 $token                 = $additionalInformation['aprt'];
-                if ($token && ! $order->getApruveOrderId()) {
+                if ($token && !$order->getApruveOrderId()) {
                     /**
                      * @var Apruve_ApruvePayment_Model_Api_Rest_Order $orderApi
                      */
                     $orderApi = Mage::getModel('apruvepayment/api_rest_order');
                     $result   = $orderApi->finalizeOrder($token, $order);
-                    if (! $result || ! $result['success']) {
+                    if (!$result || !$result['success']) {
                         Mage::throwException($result['message']);
                     }
                 }
@@ -208,7 +208,7 @@ class Apruve_ApruvePayment_Model_Observer
         try {
             $itemQty = $this->_getShippedItemQty($shipment);
             $invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice($itemQty);
-            if (! $invoice->getTotalQty()) {
+            if (!$invoice->getTotalQty()) {
                 return $invoice;
             }
 

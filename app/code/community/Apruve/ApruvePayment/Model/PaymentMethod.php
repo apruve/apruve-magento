@@ -88,12 +88,12 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
                 $billingCountry = $paymentInfo->getQuote()->getBillingAddress()->getCountryId();
             }
 
-            if (! $this->canUseForCountry($billingCountry)) {
+            if (!$this->canUseForCountry($billingCountry)) {
                 Mage::throwException($this->_getHelper()->__('Selected payment type is not allowed for billing country.'));
             }
 
             return $this;
-        } elseif (! $this->getInfoInstance()->getAdditionalInformation('aprt')) {
+        } elseif (!$this->getInfoInstance()->getAdditionalInformation('aprt')) {
             Mage::throwException('Something is going wrong, try again to post order with apruve.');
         }
     }
@@ -123,7 +123,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
 
 
         $updateResult = $orderApi->updateOrder($token, $order);
-        if (! $updateResult || ! $updateResult['success']) {
+        if (!$updateResult || !$updateResult['success']) {
             Mage::throwException('Couldn\'t update order in Apruve.');
         }
 
@@ -195,7 +195,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
 
         Mage::helper('apruvepayment')->logException('$totalAmountCents: '.$totalAmountCents);
         Mage::helper('apruvepayment')->logException('$validInvoice: '.$validInvoice);
-        if ($totalAmountCents >= ($amount * 100) && ! empty($validApruveInvoiceId)) {
+        if ($totalAmountCents >= ($amount * 100) && !empty($validApruveInvoiceId)) {
             $result = $invoiceApi->refundInvoice($validApruveInvoiceId, $amount);
         } else {
             Mage::throwException(Mage::helper('paygate')->__('Invalid data for online refund.'));
@@ -273,7 +273,7 @@ class Apruve_ApruvePayment_Model_PaymentMethod extends Mage_Payment_Model_Method
     {
         Mage::helper('apruvepayment')->logException('Cancel...');
 
-        if (! $payment->getOrder()->getInvoiceCollection()->count()) {
+        if (!$payment->getOrder()->getInvoiceCollection()->count()) {
             return $this->void($payment);
         }
 

@@ -341,7 +341,7 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
     {
         $orderIncrementId = $quote->getReservedOrderId();
         $order            = Mage::getModel('sales/order')->loadByIncrementId($orderIncrementId);
-        if (! $order->getId()) {
+        if (!$order->getId()) {
             Mage::throwException(Mage::helper('apruvepayment')->__('Couldn\'t load the order.'));
         }
 

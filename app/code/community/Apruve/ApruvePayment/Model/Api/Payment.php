@@ -167,7 +167,7 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
         $concatString = $this->getApiKey();
 
         foreach ($this->_getPaymentRequest() as $val) {
-            if (! is_array($val)) {
+            if (!is_array($val)) {
                 $concatString .= $val;
             } else {
                 foreach ($val as $v) {

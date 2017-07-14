@@ -335,7 +335,7 @@ abstract class Apruve_ApruvePayment_Model_Api_Abstract
             $variantInfo = array_merge($variantInfo, $opt);
         }
 
-        if (! empty($variantInfo)) {
+        if (!empty($variantInfo)) {
             $result = $this->getFormatedVariantInfo($variantInfo);
         }
 

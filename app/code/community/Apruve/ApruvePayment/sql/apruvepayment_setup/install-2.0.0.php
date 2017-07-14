@@ -4,9 +4,9 @@ $installer = $this;
 
 $installer->startSetup();
 
-$connection   = $installer->getConnection();
+$connection  = $installer->getConnection();
 $entityTable = $installer->getTable('apruvepayment/entity');
-if (! $connection->isTableExists($entityTable)) {
+if (!$connection->isTableExists($entityTable)) {
     $table = $connection->newTable($entityTable)
                         ->addColumn(
                             'id', Varien_Db_Ddl_Table::TYPE_INTEGER, null, array(

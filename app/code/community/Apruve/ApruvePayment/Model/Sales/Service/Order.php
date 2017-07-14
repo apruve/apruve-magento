@@ -42,14 +42,14 @@ class Apruve_ApruvePayment_Model_Sales_Service_Order extends Mage_Sales_Model_Se
             $totalQty = 0;
             foreach ($this->_order->getAllItems() as $orderItem) {
                 $qty = 0;
-                if (! $this->_canInvoiceItem($orderItem, array())) {
+                if (!$this->_canInvoiceItem($orderItem, array())) {
                     continue;
                 }
 
                 $item = $this->_convertor->itemToInvoiceItem($orderItem);
                 if ($orderItem->isDummy()) {
                     $qty = $orderItem->getQtyOrdered() ? $orderItem->getQtyOrdered() : 1;
-                } else if (! empty($qtys)) {
+                } else if (!empty($qtys)) {
                     if (isset($qtys[$orderItem->getId()])) {
                         $qty = (float)$qtys[$orderItem->getId()];
                     }
