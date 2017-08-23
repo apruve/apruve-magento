@@ -89,6 +89,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
             $iApi->capture($invoiceId);
             return true;
         }
+
         return false;
     }
 
@@ -109,6 +110,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
             $result = $this->_createInvoice($order->getIncrementId());
             return $result;
         }
+
         return false;
     }
 
@@ -132,6 +134,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
             $order->save();
             return true;
         }
+
         return false;
     }
 
@@ -149,6 +152,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
             $invoiceId = $iApi->create($orderId, array());
             return true;
         }
+
         return false;
     }
 
@@ -166,6 +170,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
             $order->save();
             return true;
         }
+
         return false;
     }
 
@@ -188,6 +193,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
                 ->addAttributeToFilter('txn_id', array('eq' => $paymentRequestId))
                 ->getFirstItem();
         }
+
         if ($transaction->getId()) {
             $order = $transaction->getOrder();
             /** @var Mage_Sales_Model_Order_Invoice_Api $iApi */

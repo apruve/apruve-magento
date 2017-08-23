@@ -30,32 +30,36 @@ class Apruve_ApruvePayment_Model_Api_Rest extends Apruve_ApruvePayment_Model_Api
      * Executes all the curl requests
      *
      * @param $curlOptions string[]
+     *
      * @return $response string
      */
-    public function execCurlRequest($url, $method = 'GET', $curlOptions = [])
+    public function execCurlRequest($url, $method = 'GET', $curlOptions = array())
     {
         $curl = curl_init();
 
-        curl_setopt_array($curl, array(
-          CURLOPT_URL => $url,
-          CURLOPT_RETURNTRANSFER => true,
-          CURLOPT_ENCODING => "",
-          CURLOPT_MAXREDIRS => 10,
-          CURLOPT_TIMEOUT => 30,
-          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-          CURLOPT_CUSTOMREQUEST => $method,
-          CURLOPT_HTTPHEADER => $this->getHeaders(),
-        ));
+        curl_setopt_array(
+            $curl, array(
+                CURLOPT_URL            => $url,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING       => "",
+                CURLOPT_MAXREDIRS      => 10,
+                CURLOPT_TIMEOUT        => 30,
+                CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST  => $method,
+                CURLOPT_HTTPHEADER     => $this->getHeaders(),
+            )
+        );
 
         curl_setopt_array($curl, $curlOptions);
 
-        $response = curl_exec($curl);
-        $err = curl_error($curl);
+        $response    = curl_exec($curl);
+        $err         = curl_error($curl);
         $http_status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
         curl_close($curl);
 
         $result = $this->_prepareResponse($response, $url, $err, $http_status, $curlOptions);
+
         return $result;
     }
 }

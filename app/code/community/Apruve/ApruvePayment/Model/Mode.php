@@ -33,8 +33,8 @@ class Apruve_ApruvePayment_Model_Mode
     public function toOptionArray()
     {
         return array(
-            array('value' => 0, 'label'=>Mage::helper('apruvepayment')->__('live')),
-            array('value' => 1, 'label'=>Mage::helper('apruvepayment')->__('test')),
+            array('value' => 0, 'label' => Mage::helper('apruvepayment')->__('live')),
+            array('value' => 1, 'label' => Mage::helper('apruvepayment')->__('test')),
         );
     }
 

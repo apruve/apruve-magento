@@ -32,6 +32,7 @@ class Apruve_ApruvePayment_Helper_Data extends Mage_Core_Helper_Abstract
     {
         $sourceModel = Mage::getModel('apruvepayment/mode');
         $sourceArray = $sourceModel->toArray();
+
         return $sourceArray[Mage::getStoreConfig('payment/apruvepayment/mode')];
     }
 
@@ -48,7 +49,8 @@ class Apruve_ApruvePayment_Helper_Data extends Mage_Core_Helper_Abstract
     public function getSrc()
     {
         $apruveUrl = Mage::getModel('apruvepayment/api_payment')->getBaseUrl();
-        return $apruveUrl . 'js/apruve.js?display=compact';
+
+        return $apruveUrl.'js/apruve.js?display=compact';
     }
 
     /**
@@ -60,7 +62,7 @@ class Apruve_ApruvePayment_Helper_Data extends Mage_Core_Helper_Abstract
     public function logException($data)
     {
         $isEnabled = Mage::getStoreConfig('payment/apruvepayment/log');
-        if($isEnabled) {
+        if ($isEnabled) {
             Mage::log($data, 7, 'apruve.log', true);
         }
     }
@@ -69,6 +71,7 @@ class Apruve_ApruvePayment_Helper_Data extends Mage_Core_Helper_Abstract
      * Retrieve only the visible items from a item collection for order, invoice and shipment
      *
      * @param Mage_Sales_Model_Abstract $object
+     *
      * @return Mage_Core_Model_Abstract[]
      */
     public function getAllVisibleItems($object)
@@ -77,13 +80,14 @@ class Apruve_ApruvePayment_Helper_Data extends Mage_Core_Helper_Abstract
         foreach ($object->getItemsCollection() as $item) {
             $orderItem = $item->getOrderItem();
             if (!$orderItem->isDeleted() && !$orderItem->getParentItemId()) {
-                $qty = (int) $item->getQty();
-                $qty = $qty > 0 ? $qty : (int) $item->getQtyOrdered();
+                $qty = (int)$item->getQty();
+                $qty = $qty > 0 ? $qty : (int)$item->getQtyOrdered();
                 if ($qty) {
-                    $items[] =  $item;
+                    $items[] = $item;
                 }
             }
         }
+
         return $items;
     }
 }

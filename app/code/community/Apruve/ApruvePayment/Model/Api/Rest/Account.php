@@ -46,45 +46,74 @@ class Apruve_ApruvePayment_Model_Api_Rest_Account extends Apruve_ApruvePayment_M
      *
      * @param string $apruveEmail
      * @param string $apruveMerchantId
+     *
      * @return $result string
      */
     public function getCorporateAccount($email)
     {
-        $data = json_encode([
-            'email' => urlencode($email)
-        ]);
+        $data = json_encode(
+            array(
+                'email' => urlencode($email)
+            )
+        );
 
-        $curlOptions = [];
+        $curlOptions                     = array();
         $curlOptions[CURLOPT_POSTFIELDS] = $data;
 
         $result = $this->execCurlRequest($this->_getCorporateAccountUrl(), 'GET', $curlOptions);
 
         if ($result) {
-            if($result['success'] == false){
+            if ($result['success'] == false) {
                 Mage::throwException(Mage::helper('apruvepayment')->__($result['messsage']));
             }
+
             $this->_fields = $result['response'];
+
             return $this->_fields;
         } else {
-            Mage::throwException(Mage::helper('apruvepayment')->__('An unknown error has occurred.  Please try again or contact Apruve support.'));
+            Mage::throwException(
+                Mage::helper('apruvepayment')
+                    ->__('An unknown error has occurred.  Please try again or contact Apruve support.')
+            );
         }
+    }
+
+    /**
+     * Retrieve an existing corporate account by its ID in apruve
+     *
+     * Get url for an Apruve corporate account
+     * @return string
+     */
+    protected function _getCorporateAccountUrl()
+    {
+        return $this->getBaseUrl(true)
+               .$this->getApiUrl()
+               .'merchants/'
+               .$this->getMerchantKey()
+               .'/corporate_accounts';
+
     }
 
     /**
      * Retrieve an the first instance of the buyers shopper_id
      *
      * @param string $mail
+     *
      * @return $result string
      */
     public function getShopperId($email)
     {
         $corperateAccountArray = $this->_fields[0];
         foreach ($corperateAccountArray['authorized_buyers'] as $buyer) {
-            if (strcasecmp($buyer['email'],$email) == 0) {
+            if (strcasecmp($buyer['email'], $email) == 0) {
                 return $buyer['id'];
             }
         }
-        Mage::throwException(Mage::helper('apruvepayment')->__('Couldn\'t find a shopper with that email address at Apruve.'));
+
+        Mage::throwException(
+            Mage::helper('apruvepayment')
+                ->__('Couldn\'t find a shopper with that email address at Apruve.')
+        );
     }
 
     /**
@@ -105,17 +134,5 @@ class Apruve_ApruvePayment_Model_Api_Rest_Account extends Apruve_ApruvePayment_M
     public function getCorporateAccountId()
     {
         return $this->_fields[0]['id'];
-    }
-
-    /**
-     * Retrieve an existing corporate account by its ID in apruve
-     *
-     * Get url for an Apruve corporate account
-     * @return string
-     */
-    protected function _getCorporateAccountUrl()
-    {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'merchants/' . $this->getMerchantKey() . '/corporate_accounts';
-
     }
 }

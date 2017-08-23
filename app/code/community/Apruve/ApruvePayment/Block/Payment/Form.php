@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Magento
  *
@@ -17,7 +18,6 @@
  * @copyright  Copyright (coffee) 2014 Apruve, Inc. (http://www.apruve.com).
  * @license    http://opensource.org/licenses/Apache-2.0  Apache License, Version 2.0
  */
-
 class Apruve_ApruvePayment_Block_Payment_Form extends Mage_Payment_Block_Form
 {
     protected function _construct()

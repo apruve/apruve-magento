@@ -27,149 +27,31 @@
 class Apruve_ApruvePayment_Model_Api_Rest_Shipment extends Apruve_ApruvePayment_Model_Api_Rest
 {
     /**
-     * Get url for shipment create
-     * @param string $apruveInvoiceId
-     * @return string
-     */
-    protected function _getCreateShipmentUrl($apruveInvoiceId)
-    {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'invoices/' . $apruveInvoiceId . '/shipments';
-    }
-
-    /**
-     * Get url for shipment retrieve
-     * @param string $apruveInvoiceId
-     * @param string $apruveShipmentId
-     * @return string
-     */
-    protected function _getShipmentUrl($apruveInvoiceId, $apruveShipmentId)
-    {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'invoices/' . $apruveInvoiceId . '/shipments/' . $apruveShipmentId;
-    }
-
-    /**
-     * Get url for shipment update
-     * @param string $apruveInvoiceId
-     * @param string $apruveShipmentId
-     * @return string
-     */
-    protected function _getUpdateShipmentUrl($apruveInvoiceId, $apruveShipmentId)
-    {
-        return $this->getBaseUrl(true) . $this->getApiUrl() . 'invoices/' . $apruveInvoiceId . '/shipments/' . $apruveShipmentId;
-    }
-
-    /**
      * Retrieve an existing shipment by its ID in apruve
      *
      * @param $id string
+     *
      * @return $result string
      */
     public function getShipment($apruveInvoiceId, $apruveShipmentId)
     {
         $result = $this->execCurlRequest($this->_getShipmentUrl($apruveInvoiceId, $apruveShipmentId));
+
         return $result;
     }
 
     /**
-     * Retrieve the latest comment from magento shipment
+     * Get url for shipment retrieve
      *
-     * @param $shipment Mage_Sales_Model_Order_Shipment
-     * @return $comment Mage_Sales_Model_Order_Shipment_Comment
-     */
-    protected function _getShipmentComment($shipment)
-    {
-        $comment = Mage::getResourceModel('sales/order_shipment_comment_collection')
-                ->setShipmentFilter($shipment->getId())
-                ->setOrder('created_at', 'DESC')
-                ->setPageSize(1)
-                ->getFirstItem();
-
-        return $comment;
-    }
-
-    /**
-     * Retrieve the latest tracking info from magento shipment
+     * @param string $apruveInvoiceId
+     * @param string $apruveShipmentId
      *
-     * @param $shipment Mage_Sales_Model_Order_Shipment
-     * @return $comment Mage_Sales_Model_Order_Shipment_Track
+     * @return string
      */
-    protected function _getShipmentTrack($shipment)
+    protected function _getShipmentUrl($apruveInvoiceId, $apruveShipmentId)
     {
-        $track = Mage::getResourceModel('sales/order_shipment_track_collection')
-                ->setShipmentFilter($shipment->getId())
-                ->setOrder('updated_at', 'DESC')
-                ->setPageSize(1)
-                ->getFirstItem();
-
-        return $track;
-    }
-
-    /**
-     * Prepare shipment data for Apruve
-     *
-     * @param $shipment Mage_Sales_Model_Order_Shipment
-     * @param $invoice Mage_Sales_Model_Order_Invoice
-     * @return $data []
-     */
-    protected function _getShipmentData($shipment, $invoice)
-    {
-        $items = [];
-
-        foreach ($shipment->getAllItems() as $item) {
-            $shipmentItem = [];
-            $shipmentItem['price_total_cents'] = $this->convertPrice($item->getPriceInclTax() * $item->getQty());
-            $shipmentItem['tax_cents'] = $this->convertPrice($item->getTaxAmount());
-            $shipmentItem['description'] = $item->getDescription();
-            $shipmentItem['title'] = $item->getName();
-            $shipmentItem['sku'] = $item->getSku();
-            $shipmentItem['price_ea_cents'] = $this->convertPrice($item->getPrice());
-            $shipmentItem['quantity'] = $item->getQty();
-            $items[] =  $shipmentItem;
-        }
-
-        /* latest shipment comment */
-        $comment = $this->_getShipmentComment($shipment);
-        /* latest shipment tracking */
-        $trackingInfo = $this->_getShipmentTrack($shipment);
-        /* prepare invoice data */
-        $data = json_encode([
-            'amount_cents' => $this->convertPrice($invoice->getBaseGrandTotal()),
-            'tax_cents' => $this->convertPrice($invoice->getTaxAmount()),
-            'shipping_cents' => $this->convertPrice($invoice->getShippingAmount()),
-            'shipper' => $trackingInfo->getTitle(),
-            'tracking_number' => $trackingInfo->getTrackNumber(),
-            'shipped_at' => $this->getDateFormatted($trackingInfo->getCreatedAt()),
-            'delivered_at' => '',
-            'currency' => $this->getCurrency(),
-            'merchant_notes' => $comment->getComment(),
-            'shipment_items' => $items,
-            'status' => 'fulfilled'
-        ]);
-
-        return $data;
-    }
-
-    /**
-     * Update Apruve shipment id to it's corresponding shipment in magento
-     *
-     * @param $id string
-     * @param $shipment Mage_Sales_Model_Order_Shipment
-     * @return bool
-     * @throws Exception
-     */
-    protected function _updateShipmentId($apruveShipmentId, $shipment)
-    {
-        try {
-            $apruveEntity = Mage::getModel('apruvepayment/entity')->loadByShipmentId($shipment->getIncrementId(), 'magento_id');
-            $apruveEntity->setApruveId($apruveShipmentId);
-            $apruveEntity->setMagentoId($shipment->getIncrementId());
-            $apruveEntity->setEntityType('shipping');
-            $apruveEntity->save();
-        } catch(Exception $e) {
-            Mage::helper('apruvepayment')->logException($e->getMessage());
-            Mage::throwException(Mage::helper('apruvepayment')->__('Couldn\'t update shipment.'));
-        }
-        return true;
+        return $this->getBaseUrl(true)
+               .$this->getApiUrl().'invoices/'.$apruveInvoiceId.'/shipments/'.$apruveShipmentId;
     }
 
     /**
@@ -178,42 +60,189 @@ class Apruve_ApruvePayment_Model_Api_Rest_Shipment extends Apruve_ApruvePayment_
      * @param string $apruveInvoiceId
      * @param Mage_Sales_Model_Order_Shipment $shipment
      * @param Mage_Sales_Model_Order_Invoice $invoice
+     *
      * @return $result string[]
      */
     public function createShipment($apruveInvoiceId, $shipment, $invoice)
     {
         $data = $this->_getShipmentData($shipment, $invoice);
 
-        $curlOptions = [];
+        $curlOptions                     = array();
         $curlOptions[CURLOPT_POSTFIELDS] = $data;
 
-        $result = $this->execCurlRequest($this->_getCreateShipmentUrl($apruveInvoiceId), 'POST', $curlOptions);
+        $result           = $this->execCurlRequest(
+            $this->_getCreateShipmentUrl($apruveInvoiceId), 'POST',
+            $curlOptions
+        );
         $apruveShipmentId = isset($result['response']['id']) ? $result['response']['id'] : '';
-        if($result['success'] == true) {
+        if ($result['success'] == true) {
             $this->_updateShipmentId($apruveShipmentId, $shipment);
             $order = Mage::getModel('sales/order')->loadByIncrementId($shipment->getOrder());
-            if($order->getStatus() == 'buyer_approved'){
+            if ($order->getStatus() == 'buyer_approved') {
                 $order->setStatus('pending');
                 $order->save();
             }
         }
+
         return $result;
+    }
+
+    /**
+     * Prepare shipment data for Apruve
+     *
+     * @param $shipment Mage_Sales_Model_Order_Shipment
+     * @param $invoice Mage_Sales_Model_Order_Invoice
+     *
+     * @return $data []
+     */
+    protected function _getShipmentData($shipment, $invoice)
+    {
+        $items = array();
+
+        foreach ($shipment->getAllItems() as $item) {
+            $shipmentItem                      = array();
+            $shipmentItem['price_total_cents'] = $this->convertPrice($item->getPriceInclTax() * $item->getQty());
+            $shipmentItem['tax_cents']         = $this->convertPrice($item->getTaxAmount());
+            $shipmentItem['description']       = $item->getDescription();
+            $shipmentItem['title']             = $item->getName();
+            $shipmentItem['sku']               = $item->getSku();
+            $shipmentItem['price_ea_cents']    = $this->convertPrice($item->getPrice());
+            $shipmentItem['quantity']          = $item->getQty();
+            $items[]                           = $shipmentItem;
+        }
+
+        /* latest shipment comment */
+        $comment = $this->_getShipmentComment($shipment);
+        /* latest shipment tracking */
+        $trackingInfo = $this->_getShipmentTrack($shipment);
+        /* prepare invoice data */
+        $data = json_encode(
+            array(
+                'amount_cents'    => $this->convertPrice($invoice->getBaseGrandTotal()),
+                'tax_cents'       => $this->convertPrice($invoice->getTaxAmount()),
+                'shipping_cents'  => $this->convertPrice($invoice->getShippingAmount()),
+                'shipper'         => $trackingInfo->getTitle(),
+                'tracking_number' => $trackingInfo->getTrackNumber(),
+                'shipped_at'      => $this->getDateFormatted($trackingInfo->getCreatedAt()),
+                'delivered_at'    => '',
+                'currency'        => $this->getCurrency(),
+                'merchant_notes'  => $comment->getComment(),
+                'shipment_items'  => $items,
+                'status'          => 'fulfilled'
+            )
+        );
+
+        return $data;
+    }
+
+    /**
+     * Retrieve the latest comment from magento shipment
+     *
+     * @param $shipment Mage_Sales_Model_Order_Shipment
+     *
+     * @return $comment Mage_Sales_Model_Order_Shipment_Comment
+     */
+    protected function _getShipmentComment($shipment)
+    {
+        $comment = Mage::getResourceModel('sales/order_shipment_comment_collection')
+                       ->setShipmentFilter($shipment->getId())
+                       ->setOrder('created_at', 'DESC')
+                       ->setPageSize(1)
+                       ->getFirstItem();
+
+        return $comment;
+    }
+
+    /**
+     * Retrieve the latest tracking info from magento shipment
+     *
+     * @param $shipment Mage_Sales_Model_Order_Shipment
+     *
+     * @return $comment Mage_Sales_Model_Order_Shipment_Track
+     */
+    protected function _getShipmentTrack($shipment)
+    {
+        $track = Mage::getResourceModel('sales/order_shipment_track_collection')
+                     ->setShipmentFilter($shipment->getId())
+                     ->setOrder('updated_at', 'DESC')
+                     ->setPageSize(1)
+                     ->getFirstItem();
+
+        return $track;
+    }
+
+    /**
+     * Get url for shipment create
+     *
+     * @param string $apruveInvoiceId
+     *
+     * @return string
+     */
+    protected function _getCreateShipmentUrl($apruveInvoiceId)
+    {
+        return $this->getBaseUrl(true).$this->getApiUrl().'invoices/'.$apruveInvoiceId.'/shipments';
+    }
+
+    /**
+     * Update Apruve shipment id to it's corresponding shipment in magento
+     *
+     * @param $id string
+     * @param $shipment Mage_Sales_Model_Order_Shipment
+     *
+     * @return bool
+     * @throws Exception
+     */
+    protected function _updateShipmentId($apruveShipmentId, $shipment)
+    {
+        try {
+            $apruveEntity = Mage::getModel('apruvepayment/entity')->loadByShipmentId(
+                $shipment->getIncrementId(),
+                'magento_id'
+            );
+            $apruveEntity->setApruveId($apruveShipmentId);
+            $apruveEntity->setMagentoId($shipment->getIncrementId());
+            $apruveEntity->setEntityType('shipping');
+            $apruveEntity->save();
+        } catch(Exception $e) {
+            Mage::helper('apruvepayment')->logException($e->getMessage());
+            Mage::throwException(Mage::helper('apruvepayment')->__('Couldn\'t update shipment.'));
+        }
+
+        return true;
     }
 
     /**
      * Create new invoice in Apruve for an order based on invoice created in Magento
      *
      * @param $id string
+     *
      * @return $result string
      */
     public function updateShipment($apruveInvoiceId, $apruveShipmentId, $shipment, $invoice)
     {
         $data = $this->_getShipmentData($shipment, $invoice);
 
-        $curlOptions = [];
+        $curlOptions                     = array();
         $curlOptions[CURLOPT_POSTFIELDS] = $data;
 
-        $result = $this->execCurlRequest($this->_getUpdateShipmentUrl($apruveInvoiceId, $apruveShipmentId), 'PUT', $curlOptions);
+        $result = $this->execCurlRequest(
+            $this->_getUpdateShipmentUrl($apruveInvoiceId, $apruveShipmentId), 'PUT',
+            $curlOptions
+        );
+
         return $result;
+    }
+
+    /**
+     * Get url for shipment update
+     *
+     * @param string $apruveInvoiceId
+     * @param string $apruveShipmentId
+     *
+     * @return string
+     */
+    protected function _getUpdateShipmentUrl($apruveInvoiceId, $apruveShipmentId)
+    {
+        return $this->getBaseUrl(true).$this->getApiUrl().'invoices/'.$apruveInvoiceId.'/shipments/'.$apruveShipmentId;
     }
 }

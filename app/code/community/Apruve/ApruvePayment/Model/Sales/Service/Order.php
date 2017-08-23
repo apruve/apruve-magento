@@ -32,32 +32,36 @@ class Apruve_ApruvePayment_Model_Sales_Service_Order extends Mage_Sales_Model_Se
      * prepare only specified items, otherwise all containing in the order.
      *
      * @param array $qtys
+     *
      * @return Mage_Sales_Model_Order_Invoice
      */
     public function prepareInvoice($qtys = array())
     {
         if (version_compare(Mage::getVersion(), '1.9.2.0', '<')) {
-            $invoice = $this->_convertor->toInvoice($this->_order);
+            $invoice  = $this->_convertor->toInvoice($this->_order);
             $totalQty = 0;
             foreach ($this->_order->getAllItems() as $orderItem) {
                 $qty = 0;
                 if (!$this->_canInvoiceItem($orderItem, array())) {
                     continue;
                 }
+
                 $item = $this->_convertor->itemToInvoiceItem($orderItem);
                 if ($orderItem->isDummy()) {
                     $qty = $orderItem->getQtyOrdered() ? $orderItem->getQtyOrdered() : 1;
                 } else if (!empty($qtys)) {
                     if (isset($qtys[$orderItem->getId()])) {
-                        $qty = (float) $qtys[$orderItem->getId()];
+                        $qty = (float)$qtys[$orderItem->getId()];
                     }
                 } else {
                     $qty = $orderItem->getQtyToInvoice();
                 }
+
                 $totalQty += $qty;
                 $item->setQty($qty);
                 $invoice->addItem($item);
             }
+
             $invoice->setTotalQty($totalQty);
             $invoice->collectTotals();
             $this->_order->getInvoiceCollection()->addItem($invoice);

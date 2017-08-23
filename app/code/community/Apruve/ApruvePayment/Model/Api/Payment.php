@@ -27,10 +27,6 @@
  */
 class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_Api_Abstract
 {
-    private $_quote;
-
-    private $_amounts;
-
     /**
      * Post request general fields
      * @var array
@@ -45,7 +41,6 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
         'shipping_cents',
         'line_items' => array(),
     );
-
     /**
      * Line Items Fields
      * @var array
@@ -61,24 +56,11 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
         'vendor',
         'view_product_url',
     );
-
     /**
      * @var array
      */
     protected $_paymentRequest;
-
-    /**
-     * Get current quote
-     * @return Mage_Sales_Model_Quote
-     */
-    public function getQuote()
-    {
-        if($this->_quote == null) {
-            $this->_quote = Mage::getSingleton('checkout/session')->getQuote();
-        }
-
-        return $this->_quote;
-    }
+    protected $_quote;
 
     /**
      * Get json encoded payment request
@@ -87,6 +69,92 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
     public function getPaymentRequestJSON()
     {
         return json_encode($this->_getPaymentRequest());
+    }
+
+    /**
+     * Build Payment Request Array
+     * @return array
+     */
+    protected function _getPaymentRequest()
+    {
+        if ($this->_paymentRequest == null) {
+            $this->_paymentRequest = array(
+                'merchant_id'    => $this->getMerchantKey(),
+                'amount_cents'   => $this->convertPrice($this->getAmount('amount_cents')),
+                'currency'       => $this->getCurrency(),
+                'tax_cents'      => $this->convertPrice($this->getAmount('tax_cents')),
+                'shipping_cents' => $this->convertPrice($this->getAmount('shipping_cents')),
+                'line_items'     => $this->getLineItems($this->getQuote())
+            );
+        }
+
+        return $this->_paymentRequest;
+    }
+
+    /**
+     * Return amount_cents, shipping_cents or tax_cents
+     *
+     * @param $key
+     *
+     * @return float | bool
+     */
+    public function getAmount($key)
+    {
+        if (empty($this->amounts)) {
+            $this->amounts = $this->getAmountsFromQuote($this->getQuote());
+        }
+
+        if (isset($this->amounts[$key])) {
+            return $this->amounts[$key];
+        }
+
+        return false;
+    }
+
+    /**
+     * Get current quote
+     * @return Mage_Sales_Model_Quote
+     */
+    public function getQuote()
+    {
+        if ($this->_quote == null) {
+            $this->_quote = Mage::getSingleton('checkout/session')->getQuote();
+        }
+
+        return $this->_quote;
+    }
+
+    /**
+     * Build Line items array
+     *
+     * @param Mage_Sales_Model_Quote $itemsParent
+     *
+     * @return array
+     */
+    protected function getLineItems($itemsParent)
+    {
+        $result = array();
+        /** @var Mage_Sales_Model_Quote_Item[] $visibleItems */
+        $visibleItems = $itemsParent->getAllVisibleItems();
+        foreach ($visibleItems as $item) {
+            $result[] = array(
+                'title'            => $item->getName(),
+                'amount_cents'     => $this->convertPrice($item->getBaseRowTotal()),
+                'price_ea_cents'   => $this->convertPrice($item->getBasePrice()),
+                'quantity'         => $item->getQty(),
+                'description'      => $this->getShortDescription($item),
+                'variant_info'     => $this->getVariantInfo($item),
+                'sku'              => $item->getSku(),
+                'view_product_url' => $item->getProduct()->getProductUrl(false),
+            );
+        }
+
+        // get discount line item
+        if (($discountItem = $this->_getDiscountItem($itemsParent))) {
+            $result[] = $discountItem;
+        }
+
+        return $result;
     }
 
     /**
@@ -106,7 +174,6 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
                     foreach ($v as $s) {
                         $concatString .= $s;
                     }
-
                 }
             }
         }
@@ -115,85 +182,15 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
     }
 
     /**
-     * Return amount_cents, shipping_cents or tax_cents
-     * @param $key
-     * @return float | bool
-     */
-    public function getAmount($key)
-    {
-        if (empty($this->amounts)) {
-            $this->amounts = $this->getAmountsFromQuote($this->getQuote());
-        }
-
-        if (isset($this->amounts[$key])) {
-            return $this->amounts[$key];
-        }
-
-        return false;
-    }
-
-    /**
-     * Build Payment Request Array
-     * @return array
-     */
-    protected function _getPaymentRequest()
-    {
-        if($this->_paymentRequest == null) {
-            $this->_paymentRequest = array(
-                'merchant_id' => $this->getMerchantKey(),
-                'amount_cents' => $this->convertPrice($this->getAmount('amount_cents')),
-                'currency' => $this->getCurrency(),
-                'tax_cents' => $this->convertPrice($this->getAmount('tax_cents')),
-                'shipping_cents' => $this->convertPrice($this->getAmount('shipping_cents')),
-                'line_items' => $this->getLineItems($this->getQuote())
-            );
-        }
-
-        return $this->_paymentRequest;
-    }
-
-    /**
      * @param Mage_Sales_Model_Quote $quote
      */
     public function getShopperInfo($attrName)
     {
-        $method = 'get' . ucfirst($attrName);
+        $method = 'get'.ucfirst($attrName);
         if ($this->getQuote()->getCustomerIsGuest()) {
             return $this->getQuote()->getBillingAddress()->$method();
         }
 
         return $this->getQuote()->getCustomer()->$method();
-    }
-
-    /**
-     * Build Line items array
-     * @param Mage_Sales_Model_Quote $itemsParent
-     * @return array
-     */
-    protected function getLineItems($itemsParent)
-    {
-        $result = array();
-        /** @var Mage_Sales_Model_Quote_Item[] $visibleItems */
-        $visibleItems = $itemsParent->getAllVisibleItems();
-        foreach ($visibleItems as $item) {
-
-            $result[] = array(
-                'title' => $item->getName(),
-                'amount_cents' => $this->convertPrice($item->getBaseRowTotal()),
-                'price_ea_cents' => $this->convertPrice($item->getBasePrice()),
-                'quantity' => $item->getQty(),
-                'description' => $this->getShortDescription($item),
-                'variant_info' => $this->getVariantInfo($item),
-                'sku' => $item->getSku(),
-                'view_product_url' => $item->getProduct()->getProductUrl(false),
-            );
-
-        }
-        // get discount line item
-        if(($discountItem = $this->_getDiscountItem($itemsParent))) {
-            $result[] = $discountItem;
-        }
-
-        return $result;
     }
 }
