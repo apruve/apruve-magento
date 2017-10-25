@@ -206,8 +206,8 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
      */
     protected function _updateFrontendOrder($apruveOrderId, $order)
     {
-	    $result    = null;
-	    $lineItems = $this->_getLineItems($order);
+        $result    = null;
+        $lineItems = $this->_getLineItems($order);
 
         // get discount line item
         if (($discountItem = $this->_getDiscountItem($order))) {
