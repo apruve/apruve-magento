@@ -147,10 +147,10 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
         foreach ($order->getAllVisibleItems() as $item) {
             $items[] = array(
                 'title'             => $item->getName(),
-                'description'       => $item->getDescription(),
                 'price_total_cents' => $item->getRowTotal() * 100,
                 'price_ea_cents'    => $item->getPrice() * 100,
                 'quantity'          => $item->getQtyOrdered(),
+                'description'       => $item->getDescription(),
                 'sku'               => $item->getSku(),
                 'view_product_url'  => $item->getProduct()->getUrlInStore()
             );
@@ -206,7 +206,9 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
      */
     protected function _updateFrontendOrder($apruveOrderId, $order)
     {
-        $lineItems = array();
+	    $result    = null;
+	    $lineItems = $this->_getLineItems($order);
+
         // get discount line item
         if (($discountItem = $this->_getDiscountItem($order))) {
             $lineItems[] = $discountItem;

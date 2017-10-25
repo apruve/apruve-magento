@@ -49,7 +49,7 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
 	protected $_lineItemFields = array(
 		//required
 		'title',
-		'amount_cents', // if qty -> should chanfe
+		'price_total_cents', // if qty -> should chanfe
 		'price_ea_cents',
 		'description',
 		'variant_info',
@@ -137,7 +137,7 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
 		foreach ( $visibleItems as $item ) {
 			$result[] = array(
 				'title'            => $item->getName(),
-				'amount_cents'     => $this->convertPrice( $item->getBaseRowTotal() ),
+				'price_total_cents'     => $this->convertPrice( $item->getBaseRowTotal() ),
 				'price_ea_cents'   => $this->convertPrice( $item->getBasePrice() ),
 				'quantity'         => $item->getQty(),
 				'description'      => $this->getShortDescription( $item ),
