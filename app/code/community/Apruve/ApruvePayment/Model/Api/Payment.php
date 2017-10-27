@@ -175,7 +175,6 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
 			}
 		}
 
-        Mage::log($concatString, null, 'mylog.log', true);
 		return hash( 'sha256', $concatString );
 	}
 
