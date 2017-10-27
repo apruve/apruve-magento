@@ -49,7 +49,7 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
 	protected $_lineItemFields = array(
 		//required
 		'title',
-		'amount_cents', // if qty -> should chanfe
+		'price_total_cents', // if qty -> should chanfe
 		'price_ea_cents',
 		'description',
 		'variant_info',
@@ -83,9 +83,9 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
 				'currency'           => $this->getCurrency(),
 				'tax_cents'          => $this->convertPrice( $this->getAmount( 'tax_cents' ) ),
 				'shipping_cents'     => $this->convertPrice( $this->getAmount( 'shipping_cents' ) ),
-				'finalize_on_create' => false,
-				'invoice_on_create'  => false,
-				'line_items' => $this->getLineItems( $this->getQuote() )
+				'finalize_on_create' => 'false',
+				'invoice_on_create'  => 'false',
+				'order_items'         => $this->getLineItems( $this->getQuote() )
 			);
 		}
 
@@ -136,14 +136,14 @@ class Apruve_ApruvePayment_Model_Api_Payment extends Apruve_ApruvePayment_Model_
 		$visibleItems = $itemsParent->getAllVisibleItems();
 		foreach ( $visibleItems as $item ) {
 			$result[] = array(
-				'title'            => $item->getName(),
-				'amount_cents'     => $this->convertPrice( $item->getBaseRowTotal() ),
-				'price_ea_cents'   => $this->convertPrice( $item->getBasePrice() ),
-				'quantity'         => $item->getQty(),
-				'description'      => $this->getShortDescription( $item ),
-				'variant_info'     => $this->getVariantInfo( $item ),
-				'sku'              => $item->getSku(),
-				'view_product_url' => $item->getProduct()->getProductUrl( false ),
+				'title'             => $item->getName(),
+				'price_total_cents' => $this->convertPrice( $item->getBaseRowTotal() ),
+				'price_ea_cents'    => $this->convertPrice( $item->getBasePrice() ),
+				'quantity'          => $item->getQty(),
+				'description'       => $this->getShortDescription( $item ),
+				'variant_info'      => $this->getVariantInfo( $item ),
+				'sku'               => $item->getSku(),
+				'view_product_url'  => $item->getProduct()->getProductUrl( false ),
 			);
 		}
 
