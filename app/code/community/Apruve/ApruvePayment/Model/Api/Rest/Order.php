@@ -92,13 +92,20 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
 		$corporateAccount->getCorporateAccount($order->getCustomerEmail());
 		$shopperId   = $corporateAccount->getShopperId($order->getCustomerEmail());
 		$paymentTerm = $corporateAccount->getPaymentTerm();
-
+		if (Mage::helper('core')->isModuleEnabled('Amasty_Orderattr')) {
+			$po_number = $order->custom('purchase_order_num');
+		} else if(method_exists($order,'getPoNumber')){
+			$po_number = $order->getPoNumber();
+		} else {
+			$po_number = '';
+		}
 		if ($shopperId) {
 			$data = json_encode(
 				array(
 					'order' => array(
 						'merchant_id'       => $this->getMerchantKey(),
 						'merchant_order_id' => $order->getIncrementId(),
+						'po_number'         => $po_number,
 						'shopper_id'        => $shopperId,
 						'payment_term'      => $paymentTerm,
 						'amount_cents'      => $this->convertPrice($order->getBaseGrandTotal()),
@@ -215,11 +222,19 @@ class Apruve_ApruvePayment_Model_Api_Rest_Order extends Apruve_ApruvePayment_Mod
 		if (($discountItem = $this->_getDiscountItem($order))) {
 			$lineItems[] = $discountItem;
 		}
+		if (Mage::helper('core')->isModuleEnabled('Amasty_Orderattr')) {
+			$po_number = $order->custom('purchase_order_num');
+		} else if(method_exists($order,'getPoNumber')){
+			$po_number = $order->getPoNumber();
+		} else {
+			$po_number = '';
+		}
 
 		$data                            = json_encode(
 			array(
 				'order' => array(
 					'merchant_order_id' => $order->getIncrementId(),
+					'po_number'         => $po_number,
 					'amount_cents'      => $this->convertPrice($order->getGrandTotal()),
 					'shipping_cents'    => $this->convertPrice($order->getBaseShippingAmount()),
 					'tax_cents'         => $this->convertPrice($order->getBaseTaxAmount()),
