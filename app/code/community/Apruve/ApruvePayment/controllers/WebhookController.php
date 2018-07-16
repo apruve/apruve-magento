@@ -40,7 +40,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
             $entity = $data->entity;
 
             // check the event triggered in Apruve to call appropriate action in Magento
-            if ($event == 'invoice.closed') {
+            if ($event == 'invoice.funded') {
                 $invoiceId = $entity->merchant_invoice_id;
                 if (! $this->_capturePayment($invoiceId)) {
                     header("HTTP/1.1 404 Not Found");
