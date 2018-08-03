@@ -25,7 +25,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
         $hash = $this->_getHashedQueryString();
 
         // if the hash doesn't match the data sent by Apruve terminate the code
-        if (! isset($_GET[$hash])) {
+        if ( ! isset($_GET[$hash])) {
             header("HTTP/1.1 404 Not Found");
             exit;
         }
@@ -34,15 +34,17 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
         $input = file_get_contents('php://input');
         $data  = json_decode($input);
 
+        Mage::log("i made it");
+
         Mage::helper('apruvepayment')->logException($data);
         try {
             $event  = $data->event;
             $entity = $data->entity;
 
             // check the event triggered in Apruve to call appropriate action in Magento
-            if ($event == 'invoice.funded') {
+            if ($event == 'invoice.funded' || $event == 'invoice.closed') {
                 $invoiceId = $entity->merchant_invoice_id;
-                if (! $this->_capturePayment($invoiceId)) {
+                if ( ! $this->_capturePayment($invoiceId)) {
                     header("HTTP/1.1 404 Not Found");
                     exit;
                 };
@@ -50,19 +52,19 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
                 exit; // should not be triggering anything in magento
 
                 $orderId = $entity->merchant_order_id;
-                if (! $this->_changeOrderStatus($orderId)) {
+                if ( ! $this->_changeOrderStatus($orderId)) {
                     header("HTTP/1.1 404 Not Found");
                     exit;
                 };
             } elseif ($event == 'order.canceled') {
                 $orderId = $entity->merchant_order_id;
-                if (! $this->_cancelOrder($orderId)) {
+                if ( ! $this->_cancelOrder($orderId)) {
                     header("HTTP/1.1 404 Not Found");
                     exit;
                 };
             } elseif ($event == 'payment_term.accepted') {
                 $orderId = $entity->merchant_order_id;
-                if (! $this->_paymentTermAccepted($orderId)) {
+                if ( ! $this->_paymentTermAccepted($orderId)) {
                     header("HTTP/1.1 404 Not Found");
                     exit;
                 };
@@ -88,11 +90,13 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
             if ($invoiceId) {
                 /** @var Mage_Sales_Model_Order_Invoice_Api $iApi */
                 $iApi = Mage::getModel('sales/order_invoice_api');
-                $iApi->capture($invoiceId);
+                if ($iApi->canCapture()){
+                    $iApi->capture($invoiceId);
+                }
 
                 return true;
             }
-        } catch (Exception $e) {
+        }  catch (Exception $e) {
             Mage::log("Cannot find this invoice in Magento - possible duplicate webhook - capturePayment - InvoiceId: {$invoiceId}");
         }
 
@@ -121,7 +125,6 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
             }
         } catch (Exception $e) {
             Mage::log("Cannot find this order in Magento - possible duplicate webhook - changeOrderStatus - OrderId: {$orderId}");
-            Mage::log("Message: {$e->getMessage()}");
         }
 
         return false;
@@ -138,6 +141,8 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
     {
         try {
             $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
+            Mage::helper('apruvepayment')->logException($order->getData());
+            Mage::helper('apruvepayment')->logException($orderId);
 
             if ($order) {
                 Mage::helper('apruvepayment')->logException('creating payment accepted...');
@@ -150,7 +155,6 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
             }
         } catch (Exception $e) {
             Mage::log("Cannot find this order in Magento - possible duplicate webhook - paymentTermAccepted - OrderId: {$orderId}");
-            Mage::log("Message: {$e->getMessage()}");
         }
 
 
@@ -176,7 +180,6 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
             }
         } catch (Exception $e) {
             Mage::log("Cannot find this invoice in Magento - possible duplicate webhook - createInvoice - OrderId: {$orderId}");
-            Mage::log("Message: {$e->getMessage()}");
         }
 
         return false;
@@ -193,6 +196,8 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
     {
         try {
             $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
+            Mage::log("orderId: {$orderId}");
+            Mage::log(var_dump($order));
             if ($order && $order->getId() && ! $order->isCanceled()) {
                 $order->cancel();
                 $order->save();
@@ -202,6 +207,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
         } catch (Exception $e) {
             Mage::log("Cannot find this entity in Magento - possible duplicate webhook - cancelOrder - OrderId: {$orderId}");
             Mage::log("Message: {$e->getMessage()}");
+            Mage::log("Message: {$e->getTraceAsString()}");
         }
 
         return false;
@@ -221,7 +227,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
         $transaction = Mage::getModel('sales/order_payment_transaction')->getCollection()
                            ->addAttributeToFilter('txn_id', array('eq' => $paymentRequestId . "_" . $paymentId))
                            ->getFirstItem();
-        if (! $transaction->getId()) {
+        if ( ! $transaction->getId()) {
             /** @var Mage_Sales_Model_Order_Payment_Transaction $transaction */
             $transaction = Mage::getModel('sales/order_payment_transaction')->getCollection()
                                ->addAttributeToFilter('txn_id', array('eq' => $paymentRequestId))
