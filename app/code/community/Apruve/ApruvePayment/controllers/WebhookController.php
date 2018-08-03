@@ -34,8 +34,6 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
         $input = file_get_contents('php://input');
         $data  = json_decode($input);
 
-        Mage::log("i made it");
-
         Mage::helper('apruvepayment')->logException($data);
         try {
             $event  = $data->event;
