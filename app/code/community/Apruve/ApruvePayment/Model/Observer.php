@@ -161,6 +161,8 @@ class Apruve_ApruvePayment_Model_Observer
      */
     public function createShipment($observer)
     {
+
+        Mage::helper('apruvepayment')->logException('createShipment...');
         $shipment = $observer->getEvent()->getShipment();
 
         /**
@@ -171,7 +173,18 @@ class Apruve_ApruvePayment_Model_Observer
         if ($order->getId() && $shipment->getIncrementId()
             && $payment->getMethod() == Apruve_ApruvePayment_Model_PaymentMethod::PAYMENT_METHOD_CODE
         ) {
-            $invoice = $this->_createInvoiceFromShipment($shipment);
+            $invoice = null;
+
+            $invoiceCollection = $order->getInvoiceCollection();
+            foreach($invoiceCollection as $lastInvoice):
+                $invoice = $lastInvoice;
+            endforeach;
+
+            if($invoice == null){
+                Mage::helper('apruvepayment')->logException('createShipment...is null');
+                $invoice = $this->_createInvoiceFromShipment($shipment);
+            }
+
             /**
              * @var Apruve_ApruvePayment_Model_Api_Rest_Shipment $shipmentApi
              */
