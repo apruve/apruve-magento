@@ -88,9 +88,11 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
             if ($invoiceId) {
                 /** @var Mage_Sales_Model_Order_Invoice_Api $iApi */
                 $iApi = Mage::getModel('sales/order_invoice_api');
-                if ($iApi->canCapture()){
+                $invoice = Mage::getModel('sales/order_invoice')->loadByIncrementId($invoiceId);
+
+                if ($invoice && $invoice->canCapture()) {
                     $iApi->capture($invoiceId);
-                }
+                };
 
                 return true;
             }
