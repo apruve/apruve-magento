@@ -3,3 +3,8 @@
 
 # Idea-based IDE project files
 /.idea
+
+# Eclipse project files
+.buildpath
+.project
+.settings

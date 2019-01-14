@@ -94,8 +94,8 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
                     $iApi->capture($invoiceId);
                 };
 
-                return true;
             }
+            return true;
         }  catch (Exception $e) {
             Mage::log("Cannot find this invoice in Magento - possible duplicate webhook - capturePayment - InvoiceId: {$invoiceId}");
         }
@@ -121,8 +121,8 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
                 Mage::helper('apruvepayment')->logException('creating invoice...');
                 $result = $this->_createInvoice($order->getIncrementId());
 
-                return $result;
             }
+            return $result;
         } catch (Exception $e) {
             Mage::log("Cannot find this order in Magento - possible duplicate webhook - changeOrderStatus - OrderId: {$orderId}");
         }
@@ -144,15 +144,15 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
             Mage::helper('apruvepayment')->logException($order->getData());
             Mage::helper('apruvepayment')->logException($orderId);
 
-            if ($order) {
+            if ($order && $order->getId()) {
                 Mage::helper('apruvepayment')->logException('creating payment accepted...');
 
                 $order->setStatus('buyer_approved');
 
                 $order->save();
 
-                return true;
             }
+            return true;
         } catch (Exception $e) {
             Mage::log("Cannot find this order in Magento - possible duplicate webhook - paymentTermAccepted - OrderId: {$orderId}");
         }
@@ -201,9 +201,8 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
             if ($order && $order->getId() && ! $order->isCanceled()) {
                 $order->cancel();
                 $order->save();
-
-                return true;
             }
+            return true;
         } catch (Exception $e) {
             Mage::log("Cannot find this entity in Magento - possible duplicate webhook - cancelOrder - OrderId: {$orderId}");
             Mage::log("Message: {$e->getMessage()}");
