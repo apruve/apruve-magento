@@ -23,11 +23,13 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
     public function updateOrderStatusAction()
     {
         $hash = $this->_getHashedQueryString();
+        $identifier = key(array_slice(Mage::app()->getRequest()->getParams(), 0, 1, TRUE));
+
 
         // if the hash doesn't match the data sent by Apruve terminate the code
-        if ( ! isset($_GET[$hash])) {
-            header("HTTP/1.1 404 Not Found");
-            exit;
+        if ($identifier != $hash) {
+            $this->getResponse()->setHeader("HTTP/1.1", "404", true);
+            return;
         }
 
         // if the hash matches the data sent by Apruve move forward with the appropriate process
@@ -42,23 +44,23 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
             // check the event triggered in Apruve to call appropriate action in Magento
             if ($event == 'invoice.funded' || $event == 'invoice.closed') {
                 $invoiceId = $entity->merchant_invoice_id;
-                if ( ! $this->_capturePayment($invoiceId)) {
-                    header("HTTP/1.1 404 Not Found");
-                    exit;
+                if (! $this->_capturePayment($invoiceId)) {
+                    $this->getResponse()->setHeader("HTTP/1.1", "404", true);
+                    return;
                 };
             } elseif ($event == 'order.accepted') {
-                exit; // should not be triggering anything in magento
+                return; // should not be triggering anything in magento
             } elseif ($event == 'order.canceled') {
                 $orderId = $entity->merchant_order_id;
-                if ( ! $this->_cancelOrder($orderId)) {
-                    header("HTTP/1.1 404 Not Found");
-                    exit;
+                if (! $this->_cancelOrder($orderId)) {
+                    $this->getResponse()->setHeader("HTTP/1.1", "404", true);
+                    return;
                 };
             } elseif ($event == 'payment_term.accepted') {
                 $orderId = $entity->merchant_order_id;
-                if ( ! $this->_paymentTermAccepted($orderId)) {
-                    header("HTTP/1.1 404 Not Found");
-                    exit;
+                if (! $this->_paymentTermAccepted($orderId)) {
+                    $this->getResponse()->setHeader("HTTP/1.1", "404", true);
+                    return;
                 };
             }
         } catch (Exception $e) {
@@ -66,7 +68,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
         }
 
         header("HTTP/1.1 200");
-        exit;
+        return;
     }
 
     /**
@@ -87,8 +89,8 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
                 if ($invoice && $invoice->canCapture()) {
                     $iApi->capture($invoiceId);
                 };
-
             }
+
             return true;
         }  catch (Exception $e) {
             Mage::log("Cannot find this invoice in Magento - possible duplicate webhook - capturePayment - InvoiceId: {$invoiceId}");
@@ -114,8 +116,8 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
             if ($order && $order->getId() && ! $order->isCanceled()) {
                 Mage::helper('apruvepayment')->logException('creating invoice...');
                 $result = $this->_createInvoice($order->getIncrementId());
-
             }
+
             return $result;
         } catch (Exception $e) {
             Mage::log("Cannot find this order in Magento - possible duplicate webhook - changeOrderStatus - OrderId: {$orderId}");
@@ -144,8 +146,8 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
                 $order->setStatus('buyer_approved');
 
                 $order->save();
-
             }
+
             return true;
         } catch (Exception $e) {
             Mage::log("Cannot find this order in Magento - possible duplicate webhook - paymentTermAccepted - OrderId: {$orderId}");
@@ -196,6 +198,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
                 $order->cancel();
                 $order->save();
             }
+
             return true;
         } catch (Exception $e) {
             Mage::log("Cannot find this entity in Magento - possible duplicate webhook - cancelOrder - OrderId: {$orderId}");
@@ -220,7 +223,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
         $transaction = Mage::getModel('sales/order_payment_transaction')->getCollection()
                            ->addAttributeToFilter('txn_id', array('eq' => $paymentRequestId . "_" . $paymentId))
                            ->getFirstItem();
-        if ( ! $transaction->getId()) {
+        if (! $transaction->getId()) {
             /** @var Mage_Sales_Model_Order_Payment_Transaction $transaction */
             $transaction = Mage::getModel('sales/order_payment_transaction')->getCollection()
                                ->addAttributeToFilter('txn_id', array('eq' => $paymentRequestId))

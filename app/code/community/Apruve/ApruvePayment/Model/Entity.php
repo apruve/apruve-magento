@@ -24,20 +24,21 @@
  */
 class Apruve_ApruvePayment_Model_Entity extends Mage_Core_Model_Abstract
 {
+    protected function _construct()
+    {
+        $this->_init('apruvepayment/entity');
+    }
+
     /**
      * Get the order item from apruve_entity table based on order id
      *
      * @param string $id
-     *
      * @return Apruve_ApruvePayment_Model_Entity
      */
     public function loadByOrderId($id)
     {
-        $itemsData = $this->getCollection()->addFieldToFilter('magento_id', $id)->addFieldToFilter(
-            'entity_type',
-            'order'
-        )->setPageSize(1)->getData();
-        if (isset($itemsData[0])) {
+        $itemsData = $this->getCollection()->addFieldToFilter('magento_id', $id)->addFieldToFilter('entity_type', 'order')->setPageSize(1)->getData();
+        if(isset($itemsData[0])) {
             $this->setData($itemsData[0]);
         }
 
@@ -48,16 +49,12 @@ class Apruve_ApruvePayment_Model_Entity extends Mage_Core_Model_Abstract
      * Get the invoice item from apruve_entity table based on invoice id
      *
      * @param string $id
-     *
      * @return Apruve_ApruvePayment_Model_Entity
      */
     public function loadByInvoiceId($id)
     {
-        $itemsData = $this->getCollection()->addFieldToFilter('magento_id', $id)->addFieldToFilter(
-            'entity_type',
-            'invoice'
-        )->setPageSize(1)->getData();
-        if (isset($itemsData[0])) {
+        $itemsData = $this->getCollection()->addFieldToFilter('magento_id', $id)->addFieldToFilter('entity_type', 'invoice')->setPageSize(1)->getData();
+        if(isset($itemsData[0])) {
             $this->setData($itemsData[0]);
         }
 
@@ -68,16 +65,12 @@ class Apruve_ApruvePayment_Model_Entity extends Mage_Core_Model_Abstract
      * Get the shipment item from apruve_entity table based on shipment id
      *
      * @param string $id
-     *
      * @return Apruve_ApruvePayment_Model_Entity
      */
     public function loadByShipmentId($id)
     {
-        $itemsData = $this->getCollection()->addFieldToFilter('magento_id', $id)->addFieldToFilter(
-            'entity_type',
-            'shipment'
-        )->setPageSize(1)->getData();
-        if (isset($itemsData[0])) {
+        $itemsData = $this->getCollection()->addFieldToFilter('magento_id', $id)->addFieldToFilter('entity_type', 'shipping')->setPageSize(1)->getData();
+        if(isset($itemsData[0])) {
             $this->setData($itemsData[0]);
         }
 
@@ -91,7 +84,7 @@ class Apruve_ApruvePayment_Model_Entity extends Mage_Core_Model_Abstract
      */
     public function getItemIds()
     {
-        if ($this->getId()) {
+        if($this->getId()) {
             $items = Mage::helper('core')->jsonDecode($this->getApruveItemId());
 
             $itemIds = array();
@@ -103,11 +96,6 @@ class Apruve_ApruvePayment_Model_Entity extends Mage_Core_Model_Abstract
         }
 
         return false;
-    }
-
-    protected function _construct()
-    {
-        $this->_init('apruvepayment/entity');
     }
 
 }
