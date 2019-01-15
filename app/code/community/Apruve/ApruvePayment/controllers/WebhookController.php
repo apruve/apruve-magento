@@ -48,12 +48,6 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
                 };
             } elseif ($event == 'order.accepted') {
                 exit; // should not be triggering anything in magento
-
-                $orderId = $entity->merchant_order_id;
-                if ( ! $this->_changeOrderStatus($orderId)) {
-                    header("HTTP/1.1 404 Not Found");
-                    exit;
-                };
             } elseif ($event == 'order.canceled') {
                 $orderId = $entity->merchant_order_id;
                 if ( ! $this->_cancelOrder($orderId)) {
