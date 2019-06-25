@@ -1,7 +1,27 @@
 <layout version="0.1.0">
+    <checkout_cart_index>
+        <reference name="checkout.cart.top_methods">
+            <block type="core/template" name="checkout.cart.methods.apruve.top" after="-"
+                   template="apruvepayment/topcartlink.phtml">
+            </block>
+        </reference>
+        <reference name="checkout.cart.methods">
+            <block type="core/template" name="checkout.cart.methods.apruve.bottom" after="-"
+                   template="apruvepayment/bottomcartlink.phtml">
+            </block>
+        </reference>
+    </checkout_cart_index>
+    <default>
+        <reference name="cart_sidebar.extra_actions">
+            <block type="core/template" name="apruvepayment.partner.cart_sidebar.shortcut" template="apruvepayment/minicartlink.phtml"/>
+        </reference>
+    </default>
     <checkout_onepage_index>
         <reference name="head">
             <block type="core/template" name="apruve_js" template="apruvepayment/head.phtml" output="toHtml"/>
         </reference>
     </checkout_onepage_index>
 </layout>
+
+
+
