@@ -48,7 +48,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
                     $this->getResponse()->setHeader("HTTP/1.1", "404", true);
                     return;
                 };
-            } elseif ($event == 'order.accepted') {
+            } elseif ($event == 'payment_term.accepted') {
                 return; // should not be triggering anything in magento
             } elseif ($event == 'order.canceled') {
                 $orderId = $entity->merchant_order_id;
@@ -56,7 +56,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
                     $this->getResponse()->setHeader("HTTP/1.1", "404", true);
                     return;
                 };
-            } elseif ($event == 'payment_term.accepted') {
+            } elseif ($event == 'order.accepted') {
                 $orderId = $entity->merchant_order_id;
                 if (! $this->_paymentTermAccepted($orderId)) {
                     $this->getResponse()->setHeader("HTTP/1.1", "404", true);
