@@ -29,6 +29,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
         // if the hash doesn't match the data sent by Apruve terminate the code
         if ($identifier != $hash) {
             $this->getResponse()->setHeader("HTTP/1.1", "404", true);
+            Mage::helper('apruvepayment')->logException("hash mismatch, expected" . $hash . " got " . $identifier);
             return;
         }
 
@@ -45,6 +46,7 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
             if ($event == 'invoice.funded' || $event == 'invoice.closed') {
                 $invoiceId = $entity->merchant_invoice_id;
                 if (! $this->_capturePayment($invoiceId)) {
+                    Mage::helper('apruvepayment')->logException("Unable to capture payment");
                     $this->getResponse()->setHeader("HTTP/1.1", "404", true);
                     return;
                 };
@@ -88,6 +90,8 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
 
                 if ($invoice && $invoice->canCapture()) {
                     $iApi->capture($invoiceId);
+                } else {
+                    Mage::helper('apruvepayment')->logException("Invoice " . $invoiceId . " does not exist or cannot be captured");
                 };
             }
 
