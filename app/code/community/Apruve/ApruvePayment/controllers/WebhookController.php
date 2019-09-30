@@ -23,12 +23,11 @@ class Apruve_ApruvePayment_WebhookController extends Mage_Core_Controller_Front_
     public function updateOrderStatusAction()
     {
         $hash = $this->_getHashedQueryString();
-        $identifier = key(array_slice(Mage::app()->getRequest()->getParams(), 0, 1, TRUE));
-
 
         // if the hash doesn't match the data sent by Apruve terminate the code
-        if ($identifier != $hash) {
+        if (!array_key_exists($hash, Mage::app()->getRequest()->getParams())) {
             $this->getResponse()->setHeader("HTTP/1.1", "404", true);
+            Mage::helper('apruvepayment')->logException("authentication hash was not present as a param of the request");
             return;
         }
 
